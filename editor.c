@@ -9,21 +9,17 @@ which these 4 will have to undergo in order to prove themselves worthy? Stay tun
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-int main(int argc, char *argv[])
+void writeToFile(char *filename)
 {
-	FILE *file;
+	FILE *file = fopen(filename, "a+");;
 	char ch;
-  
-	// Open the file for writing
-	file = fopen(argv[1], "a+");
+	
 	if (!file){
 		printf("File could not be opened. Press any key to continue! \n\a\a");
 		getchar();
-		return -1;
+		return;
 	}
 
-	// Read the data, save it to the file character by character and close the file pointer
 	// For now, if the user does not input anything other than I at the beginning, we will go on asking him to do so or use tilde to escape.
 	printf("Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
 	
@@ -43,20 +39,37 @@ int main(int argc, char *argv[])
 			printf("Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
 		}
 	}
+	
 	fclose(file);
+}
 
-	// Print from the file character by character
-	file=fopen(argv[1],"r");
+void printFromFile(char *filename)
+{
+	FILE *file;
+	char ch;
+	file=fopen(filename,"r");
+	
 	if (!file){
 		printf("File could not be opened. Press any key to continue! \n\a\a");
 		getchar();
-		return -1;
+		return;
 	}
+	
 	while((ch=fgetc(file))!=EOF){
 		printf("%c",ch);
 	}
+	
 	fclose(file);
-	return 0;
 }
 
+int main(int argc, char *argv[])
+{
+	// Open the file for writing
+	writeToFile(argv[1]);
+
+	// Print from the file
+	printFromFile(argv[1]);
+	
+	return 0;
+}
 // Green hoti Cabbage, Modi is savage xD
