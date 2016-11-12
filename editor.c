@@ -4,13 +4,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-int main()
+int main(int argc, char *argv[])
 {
 	FILE *file;
 	char ch;
   
 	// Open the file for writing
-	file = fopen("records.txt", "w");
+	file = fopen(argv[1], "a+");
 	if (!file){
 		printf("File could not be opened. Press any key to continue! \n\a\a");
 		getchar();
@@ -40,7 +40,7 @@ int main()
 	fclose(file);
 
 	// Print from the file character by character
-	file=fopen("records.txt","rt");
+	file=fopen(argv[1],"r");
 	if (!file){
 		printf("File could not be opened. Press any key to continue! \n\a\a");
 		getchar();
