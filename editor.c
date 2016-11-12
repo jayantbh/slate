@@ -1,4 +1,10 @@
-// The basic, most stripped down version of a Text Editor
+/* 
+	After two years of cursing vim and getting too friendly with GUI based text editors, 4 boys turn to the once forsaken text editor for 
+inspiration and guidance on their final year project.
+	Will the CLI text editor Gods look down with benevolence on the return of the prodigal sons, or have they prepared some sort of trial
+which these 4 will have to undergo in order to prove themselves worthy? Stay tuned to know more!!
+
+*/
 
 #include <stdio.h>
 #include <string.h>
@@ -52,3 +58,5 @@ int main(int argc, char *argv[])
 	fclose(file);
 	return 0;
 }
+
+// Green hoti Cabbage, Modi is savage xD
