@@ -18,12 +18,24 @@ int main()
 	}
 
 	// Read the data, save it to the file character by character and close the file pointer
-	printf("Enter text after the prompt. Enter ~ and press enter to stop entering text.\n>> ");
+	printf("Press S and Enter to save and Quit, Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
 	
 	while(1){
-		if((ch = getchar()) != '~')
-			fputc( ch, file );
-		else break;
+		ch=getchar();
+		if(ch == 'S' || ch == 's'){
+			break;
+		}
+		else if(ch == 'I' || ch == 'i'){
+			while(1){
+				if((ch = getchar()) != '~')
+					fputc( ch, file );
+				else break;
+			}
+		}
+		else{
+			system("clear");
+	                printf("Press S and Enter to save and Quit, Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
+		}
 	}
 	fclose(file);
 
