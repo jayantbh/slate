@@ -1,1 +1,0 @@
-This project aims to build a command line text editor.
