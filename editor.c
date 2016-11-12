@@ -18,29 +18,28 @@ int main()
 	}
 
 	// Read the data, save it to the file character by character and close the file pointer
-	printf("Press S and Enter to save and Quit, Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
+	// For now, if the user does not input anything other than I at the beginning, we will go on asking him to do so or use tilde to escape.
+	printf("Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
 	
 	while(1){
 		ch=getchar();
-		if(ch == 'S' || ch == 's'){
-			break;
-		}
-		else if(ch == 'I' || ch == 'i'){
+		if(ch == 'I' || ch == 'i'){
 			while(1){
 				if((ch = getchar()) != '~')
 					fputc( ch, file );
 				else break;
 			}
 		}
+		else if(ch == '~'){
+			break;
+		}
 		else{
-			system("clear");
-	                printf("Press S and Enter to save and Quit, Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
+			printf("Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
 		}
 	}
 	fclose(file);
 
 	// Print from the file character by character
-	
 	file=fopen("records.txt","rt");
 	if (!file){
 		printf("File could not be opened. Press any key to continue! \n\a\a");
