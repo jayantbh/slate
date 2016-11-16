@@ -12,138 +12,38 @@ struct node{
 //this link always point to first Link
 struct node *head = NULL;
 
-//this link always point to last Link 
-struct node *last = NULL;
-
-struct node *current = NULL;
-
-//is list empty
-bool isEmpty()
+void display(struct node *node)
 {
-	return head == NULL;
-}
-
-int length()
-{
-	int length = 0;
-	struct node *current;
-	
-	for(current = head; current != NULL; current = current->next){
-		length++;
+	while(node!=NULL){
+		printf("%c", node->data);
+		node = node->next;
 	}
-	
-	return length;
 }
-
-//display the list in from first to last
-void display() 
+void insertFirst(char data)
 {
-
-    //start from the beginning
-    struct node *ptr = head;
-	
-    //navigate till the end of the list
-    while(ptr != NULL) {        
-		printf("%c",ptr->data);
-		ptr = ptr->next;
-    }
 	
 }
 
-
-//insert link at the first location
-void insertFirst(int data) 
+/* the offset marks the position of the cursor from the starting of the head_ref
+ we can set the head_ref as the starting position of a particular line or the 
+ starting position of the entire document. The first positions will be inserted via insertFirst. */
+void insertAfter(struct node** head_ref, int offset, char newData)
 {
-
-    //create a link
-    struct node *link = (struct node*) malloc(sizeof(struct node));
-    link->data = data;
+	struct node* newNode = (struct node*) malloc(sizeof(struct node));
+	newNode->data = newData;
 	
-    if(isEmpty()) {
-       //make it the last link
-       last = link;
-    } else {
-       //update first prev link
-       head->prev = link;
-    }
-
-    //point it to old first link
-    link->next = head;
-	
-    //point first to new first link
-    head = link;
+	struct node* temp = (*head_ref);
 }
 
-//insert link at the last location
-void insertLast(int data) 
+void deleteFirst()
 {
-
-    //create a link
-	struct node *link = (struct node*) malloc(sizeof(struct node));
-    link->data = data;
 	
-    if(isEmpty()) {
-       //make it the last link
-       last = link;
-    } else {
-       //make link a new last link
-       last->next = link;     
-      
-       //mark old last node as prev of new link
-       link->prev = last;
-    }
-
-	//point last to new last node
-	last = link;
 }
 
-//delete first item
-struct node* deleteFirst() {
-
-   //save reference to first link
-   struct node *tempLink = head;
-	
-   //if only one link
-   if(head->next == NULL){
-      last = NULL;
-   } else {
-      head->next->prev = NULL;
-   }
-	
-   head = head->next;
-   //return the deleted link
-   return tempLink;
-}
-
-//delete link at the last location
-
-struct node* deleteLast() {
-   //save reference to last link
-   struct node *tempLink = last;
-	
-   //if only one link
-   if(head->next == NULL) {
-      head = NULL;
-   } else {
-      last->prev->next = NULL;
-   }
-	
-   last = last->prev;
-	
-   //return the deleted link
-   return tempLink;
-}
-
-//delete a link with given key
-
-struct node* deleteAfter() 
+/* the offset marks the position of the cursor from the starting of the head_ref
+ we can set the head_ref as the starting position of a particular line or the 
+ starting position of the entire document */
+void deleteAfter(struct node** head_ref, int offset)
 {
-}
-
-bool insertAfter() 
-{
-}
-
-main() 
-{
+	
 }
