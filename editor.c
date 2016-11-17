@@ -16,8 +16,6 @@ struct node{
 	struct node *prev;
 };
 
-//this link always point to first Link
-
 void display(struct node* head_ref)
 {
 	struct node* temp = head_ref;
@@ -137,7 +135,6 @@ void writeToFile(char *filename)
 }
 
 //take the characters from the file and insert them into a linkedlist while printing them at the same time
-
 struct node* loadFromFile(char *filename)
 {
 	struct node* head = NULL;
@@ -155,9 +152,19 @@ struct node* loadFromFile(char *filename)
 		append(&head, ch);
 	}
 	
-	display(head);
+	//display(head);
 	return head;
 	fclose(file);
+}
+
+struct node* getHead(struct node* currNode)
+{
+	while(1){
+		if(currNode-> prev == NULL)
+			return currNode;
+		else
+			currNode = currNode->prev;
+	}
 }
 
 int main(int argc, char *argv[])
@@ -166,9 +173,16 @@ int main(int argc, char *argv[])
 	writeToFile(argv[1]);
 	
 	//Load the editable Linked List
-	struct node* head = loadFromFile(argv[1]);
+	struct node* curr = loadFromFile(argv[1]);
 		
-	display(head);
+	display(curr);
+	
+	//move the current position to the end of the Linked List since that's where the cursor will be
+	while(curr->next != NULL){
+		goRight(curr);
+	}
+	
+	//implementing the arrow captures is beyond my current scope
 	return 0;
 }
 // Green hoti Cabbage, Modi is savage xD
