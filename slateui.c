@@ -14,10 +14,9 @@
 
 #include <ncurses.h>
 
-int main(void)
-{
+int main(void) {
     char ch;
-    int x,y;
+    int x, y;
 
     initscr();
     keypad(stdscr, TRUE);
@@ -25,10 +24,10 @@ int main(void)
     addstr("Press ` to quit\n");
     refresh();
 
-    while( (ch = getch()) != '`'){
-        if((int)ch == 10){
-            getyx(stdscr,y,x);
-            move(++y,0);
+    while ((ch = getch()) != '`') {
+        if ((int) ch == 10) {
+            getyx(stdscr, y, x);
+            move(++y, 0);
         }
     }
 
