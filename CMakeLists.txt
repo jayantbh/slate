@@ -6,7 +6,7 @@ set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 
 set(SOURCE_FILES
-        slateui.c)
+        source/slateui.c)
 
 add_executable(slate.out ${SOURCE_FILES})
 
