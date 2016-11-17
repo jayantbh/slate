@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(slate)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -lncurses")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -lpanel -lncurses")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 

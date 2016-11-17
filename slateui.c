@@ -1,12 +1,45 @@
+/**
+ * SlateUI test code.
+ * We're using this to learn how to use ncurses to build a UI.
+ * Started on 12/11 by jayantbh.
+ */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wuninitialized"
+#pragma ide diagnostic ignored "CannotResolve"
+
+/**
+ * Begin Code
+ */
+
+
 #include <ncurses.h>
 
-int main(int argc, char** argv){
+int main(void)
+{
+    char ch;
+    int x,y;
 
-    initscr();			/* Start curses mode 		  */
-    printw("Hello World !!!");	/* Print Hello World		  */
-    refresh();			/* Print it on to the real screen */
-    getch();			/* Wait for user input */
-    endwin();			/* End curses mode		  */
+    initscr();
+    keypad(stdscr, TRUE);
+    addstr("Type a few lines of text\n");
+    addstr("Press ` to quit\n");
+    refresh();
 
-	return 0;
+    while( (ch = getch()) != '`'){
+        if((int)ch == 10){
+            getyx(stdscr,y,x);
+            move(++y,0);
+        }
+    }
+
+    endwin();
+    return 0;
 }
+
+
+
+/**
+ * End Code
+ */
+
+#pragma clang diagnostic pop
