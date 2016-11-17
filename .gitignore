@@ -31,4 +31,12 @@
 # Debug files
 *.dSYM/
 *.su
+
+# JetBrains project
 .idea/
+
+# CMake Temp files
+CMakeFiles
+Makefile
+CMakeCache.txt
+cmake_install.cmake
