@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 struct node{
 	char data;
@@ -91,6 +90,7 @@ void goLeft(struct node* currNode)
 		currNode = currNode->prev;
 	return;
 }
+
 
 void main()
 {
