@@ -9,12 +9,57 @@ which these 4 will have to undergo in order to prove themselves worthy? Stay tun
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#define MAX 10
 
 struct node{
 	char data;
 	struct node *next;
 	struct node *prev;
 };
+
+struct URNODE{
+	struct node *link;
+	char operation;
+};
+
+int UFRONT=-1,UREAR=-1,RFRONT=-1,RREAR=-1;
+struct URNODE UNDO[10],REDO[10];
+
+//undo push
+
+void Upush(){
+	
+}
+
+//undo pop
+
+void Upop(){
+	
+}
+
+//redo push
+
+void Rpush(){
+	
+}
+
+//redo pop
+
+void Rpop(){
+	
+}
+
+//Undo
+
+void undo(){
+	
+}
+
+//Redo
+
+void redo(){
+	
+}
 
 //this link always point to first Link
 
@@ -83,6 +128,26 @@ void append(struct node** head_ref, char newData)
 	last->next = newNode;
 	newNode->prev = last;
 	
+	return;
+}
+
+//traverse the Linked List up, towards the head
+void goUp(struct node* currNode)
+{
+	int i=0;
+	if(currNode->prev != NULL && i<48)
+		currNode = currNode->prev;
+	i++;
+	return;
+}
+
+//traverse the Linked List down, towards the tail
+void goDown(struct node* currNode)
+{
+	int i=0;
+	if(currNode->next != NULL && i<48)
+		currNode = currNode->next;
+	i++;
 	return;
 }
 
