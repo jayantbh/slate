@@ -9,12 +9,127 @@ which these 4 will have to undergo in order to prove themselves worthy? Stay tun
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#define MAX 10
 
 struct node{
 	char data;
 	struct node *next;
 	struct node *prev;
 };
+
+struct urnode{
+	struct node *link;
+	char operation;
+};
+
+int ufront=-1,urear=-1,rfront=-1,rrear=-1;
+struct urnode undostack[10],redostack[10];
+
+//undo push
+
+void undoPush(struct node *currNode,char opr){
+	if(ufront==-1){
+		ufront=urear=0;
+	}
+	else{
+		ufront=(ufront+1)%MAX;
+		if(ufront==urear){
+			urear++;
+			free(undostack[ufront].link);
+		}
+	}
+	undostack[ufront].link=currNode;
+	undostack[ufront].operation=opr;
+}
+
+//undo pop
+
+struct urnode undoPop(){
+	int pos=0;
+	/*if(ufront==-1){
+		return ;
+	}*/
+	if(ufront==urear){
+		pos=ufront;
+		ufront=urear=-1;
+	}
+	else{
+		ufront--;
+		if(ufront<0){
+			ufront=9;
+		}
+	}
+	return undostack[pos];
+}
+
+//redo push
+
+void redoPush(struct node *currNode,char opr){
+	if(rfront==-1){
+		rfront=rrear=0;
+	}
+	else{
+		rfront=(rfront+1)%MAX;
+		if(rfront==rrear){
+			rrear++;
+			free(redostack[rfront].link);
+		}
+	}
+	redostack[rfront].link=currNode;
+	redostack[rfront].operation=opr;
+}
+
+//redo pop
+
+struct urnode redoPop(){
+	int pos=0;
+	/*if(ufront==-1){
+		return ;
+	}*/
+	if(rfront==rrear){
+		pos=rfront;
+		rfront=rrear=-1;
+	}
+	else{
+		rfront--;
+		if(rfront<0){
+			rfront=9;
+		}
+	}
+	return redostack[pos];	
+}
+
+//Undo
+
+void undo(){
+	struct urnode unode=undoPop();
+	if(unode.operation=='d'){
+		unode.link->prev->next=unode.link;
+		unode.link->next->prev=unode.link;
+		redoPush(unode.link,'i');
+	}
+	else{
+		unode.link->prev=unode.link->next;
+		unode.link->next=unode.link->prev;
+		redoPush(unode.link,'d');
+	}
+}
+
+//Redo
+
+void redo(){
+	struct urnode rnode=redoPop();
+	if(rnode.operation=='d'){
+		rnode.link->prev->next=rnode.link;
+		rnode.link->next->prev=rnode.link;
+		undoPush(rnode.link,'i');
+	}
+	else{
+		rnode.link->prev=rnode.link->next;
+		rnode.link->next=rnode.link->prev;
+		undoPush(rnode.link,'d');
+	}
+}
 
 //this link always point to first Link
 
@@ -83,6 +198,28 @@ void append(struct node** head_ref, char newData)
 	last->next = newNode;
 	newNode->prev = last;
 	
+	return;
+}
+
+//traverse the Linked List up, towards the head
+void goUp(struct node* currNode)
+{
+	int i=0;
+	while(currNode->prev != NULL && i<48 && currNode->data != '\n'){
+		currNode = currNode->prev;
+		i++;
+	}
+	return;
+}
+
+//traverse the Linked List down, towards the tail
+void goDown(struct node* currNode)
+{
+	int i=0;
+	while(currNode->next != NULL && i<48 && currNode->data !='\n'){
+		currNode = currNode->next;
+		i++;
+	}
 	return;
 }
 
@@ -162,6 +299,7 @@ struct node* loadFromFile(char *filename)
 
 int main(int argc, char *argv[])
 {
+	/*
 	// Open the file for writing
 	writeToFile(argv[1]);
 	
@@ -169,6 +307,7 @@ int main(int argc, char *argv[])
 	struct node* head = loadFromFile(argv[1]);
 		
 	display(head);
+	*/
 	return 0;
 }
 // Green hoti Cabbage, Modi is savage xD
