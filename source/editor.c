@@ -24,6 +24,7 @@ struct urnode{
 
 int ufront=-1,urear=-1,rfront=-1,rrear=-1;
 struct urnode undostack[10],redostack[10];
+int noofcharacters[1000][1],cursorpos=0;
 
 //undo push
 
@@ -239,9 +240,9 @@ void goLeft(struct node* currNode)
 	return;
 }
 
-void writeToFile(char *filename)
+void writeToFile(char *filename,struct node* head_ref)
 {
-	FILE *file = fopen(filename, "a+");;
+	FILE *file = fopen(filename, "w+");;
 	char ch;
 	
 	if (!file){
@@ -249,16 +250,28 @@ void writeToFile(char *filename)
 		getchar();
 		return;
 	}
-
-	// For now, if the user does not input anything other than I at the beginning, we will go on asking him to do so or use tilde to escape.
-	printf("Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
 	
+	struct node* temp = head_ref;
+	while (temp != NULL)
+    {
+        fputc( temp->data, file );
+		temp=temp->next;
+    }
+	
+	fclose(file);
+}
+
+//modify the file using linkedlist
+void operateonlinkedlist(struct node* head_ref){
+	struct node* temp=head_ref;
+	char ch;
 	while(1){
+		printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
 		ch=getchar();
 		if(ch == 'I' || ch == 'i'){
 			while(1){
 				if((ch = getchar()) != '~')
-					fputc( ch, file );
+					append( &head_ref,ch );
 				else break;
 			}
 		}
@@ -266,11 +279,9 @@ void writeToFile(char *filename)
 			break;
 		}
 		else{
-			printf("Press I and Enter to start entering text and ~ and Enter to stop entering text.\n>> ");
+			printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
 		}
 	}
-	
-	fclose(file);
 }
 
 //take the characters from the file and insert them into a linkedlist while printing them at the same time
@@ -302,13 +313,20 @@ int main(int argc, char *argv[])
 	/*
 	// Open the file for writing
 	writeToFile(argv[1]);
+	*/
 	
 	//Load the editable Linked List
 	struct node* head = loadFromFile(argv[1]);
-		
+	
+	//operate on the linked list to insert or delete characters
+	operateonlinkedlist(head);
+	
+	//Write linkedlist content to file
+	writeToFile(argv[1],head);
+	
 	display(head);
-	*/
 	return 0;
 }
+
 // Green hoti Cabbage, Modi is savage xD
 // Jisse dhaniya samjha, woh pudina nikla; jisse apna samjha woh kameena nikla xD
