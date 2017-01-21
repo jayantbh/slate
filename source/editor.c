@@ -162,20 +162,27 @@ void push(struct node** head_ref, char newData)
 }
 
 //insert a character after a given node
-void insertAfter(struct node* prevNode, char newData)
+void insertBefore(struct node* currNode, char newData)
 {
-	if(prevNode == NULL)
+	if(currNode == NULL){
+		printf("Error!!!\n");
 		return; //error has occurred
+	}
 	
 	struct node* newNode = (struct node*) malloc(sizeof(struct node));
 	newNode->data = newData;
-	
-	newNode->next = prevNode->next;
-	prevNode->next = newNode;
-	newNode->prev = prevNode;
-	if(newNode->next != NULL)
-		newNode->next->prev = newNode;
-	
+	if(currNode->prev == NULL){
+		newNode->next = currNode;
+		currNode->prev = newNode;
+		newNode->prev = NULL;
+	}
+	else{
+		newNode->next = currNode;
+		newNode->prev = currNode->prev;
+		
+		currNode->prev->next=newNode;
+		currNode->prev = newNode;
+		}
 	return;
 }
 
@@ -225,19 +232,19 @@ void goDown(struct node* currNode)
 }
 
 //traverse the Linked List to the right, towards the tail
-void goRight(struct node* currNode)
+struct node* goRight(struct node* currNode)
 {
 	if(currNode->next != NULL)
 		currNode = currNode->next;
-	return;
+	return currNode;
 }
 
 //traverse the Linked List to the left, towards the head
-void goLeft(struct node* currNode)
+struct node* goLeft(struct node* currNode)
 {
 	if(currNode->prev != NULL)
 		currNode = currNode->prev;
-	return;
+	return currNode;
 }
 
 void writeToFile(char *filename,struct node* head_ref)
@@ -262,24 +269,37 @@ void writeToFile(char *filename,struct node* head_ref)
 }
 
 //modify the file using linkedlist
-void operateonlinkedlist(struct node* head_ref){
-	struct node* temp=head_ref;
+void operateonLinkedList(struct node* head_ref){
+	struct node *currNode=NULL;currNode=head_ref;
 	char ch;
 	while(1){
-		printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
+		printf("Press I start entering text and ~ to Exit A to move left D to move right.\n>> ");
 		ch=getchar();
 		if(ch == 'I' || ch == 'i'){
 			while(1){
-				if((ch = getchar()) != '~')
-					append( &head_ref,ch );
+				if((ch = getchar()) != '~'){
+						insertBefore( currNode,ch );
+				}
 				else break;
 			}
 		}
 		else if(ch == '~'){
 			break;
 		}
+		else if(ch=='a'||ch=='A'){
+			if(currNode->prev!=NULL){
+				currNode=currNode->prev;
+				//printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->next->data);
+			}
+		}
+		else if(ch=='d'||ch=='D'){
+			if(currNode->next!=NULL){
+				currNode=currNode->next;
+				//printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->next->data);
+			}
+		}
 		else{
-			printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
+			//printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
 		}
 	}
 }
@@ -296,7 +316,7 @@ struct node* loadFromFile(char *filename)
 	if (!file){
 		printf("File could not be opened. Press any key to continue! \n\a\a");
 		getchar();
-		return;
+		return head;
 	}
 	
 	while((ch=fgetc(file))!=EOF){
@@ -310,16 +330,16 @@ struct node* loadFromFile(char *filename)
 
 int main(int argc, char *argv[])
 {
-	/*
-	// Open the file for writing
-	writeToFile(argv[1]);
-	*/
 	
 	//Load the editable Linked List
 	struct node* head = loadFromFile(argv[1]);
 	
 	//operate on the linked list to insert or delete characters
-	operateonlinkedlist(head);
+	operateonLinkedList(head);
+	
+	//go to the new head location if any characters were inserted before current head position
+	while(head->prev != NULL)
+		head=head->prev;
 	
 	//Write linkedlist content to file
 	writeToFile(argv[1],head);
@@ -327,6 +347,5 @@ int main(int argc, char *argv[])
 	display(head);
 	return 0;
 }
-
 // Green hoti Cabbage, Modi is savage xD
 // Jisse dhaniya samjha, woh pudina nikla; jisse apna samjha woh kameena nikla xD
