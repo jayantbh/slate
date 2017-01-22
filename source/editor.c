@@ -142,6 +142,7 @@ void display(struct node* head_ref)
         printf("%c", temp->data);
         temp = temp->next;
     }
+	printf("\n");
 }
 
 //push a character at the beginning of the Linked List
@@ -258,29 +259,6 @@ void goDown(struct node* currNode)
 	return;
 }
 
-//traverse The LinkedList Left Or Right N positions
-int moveCursorN(int N,struct node* currNode){
-	if(N>0){
-		while(N>=0){
-			if(currNode->next != NULL)
-				currNode=currNode->next;
-			else
-				return -1;
-			N--;
-		}
-	}
-	else if(N<0){
-		while(N<=0){
-			if(currNode->next != NULL)
-				currNode=currNode->next;
-			else
-				return -1;
-			N++;
-		}
-	}
-	return 0;
-}
-
 //traverse the Linked List to the right, towards the tail
 struct node* goRight(struct node* currNode)
 {
@@ -323,7 +301,7 @@ void operateonLinkedList(struct node** head_ref){
 	struct node *currNode=NULL;currNode=*head_ref;
 	char ch;
 	//system ("/bin/stty raw");
-	printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
+	printf("\nPress I to start entering text and ~ to Exit A to move left D to move right P to display All.Press ENTER after any COMMAND\n>> ");
 	while(1){
 		ch=getchar();
 		if(ch == 'I' || ch == 'i'){
@@ -368,10 +346,13 @@ void operateonLinkedList(struct node** head_ref){
 				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
 			}
 		}
+		else if(ch == 'P' || ch == 'p'){
+			display(*head_ref);
+		}
 		else{
 			//Flushing STDIN buffer to delete the extra Undesired NewLine
 			fflush(stdin);
-			printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
+			printf("\nPress I to start entering text and ~ to Exit A to move left D to move right P to Display All.Press ENTER after any COMMAND\n>> ");
 		}
 		//Flushing STDIN buffer to delete the extra Undesired NewLine
 		fflush(stdin);
@@ -407,6 +388,48 @@ struct node* loadFromFile(char *filename)
 	return head;
 	fclose(file);
 }
+
+//API
+
+//Display N characters
+int displayNcharacters(struct node* currNode,int N)
+{
+	struct node* temp = currNode;
+	while (N--)
+    {
+		if(temp != NULL){
+			printf("%c", temp->data);
+			temp = temp->next;
+		}
+		else
+			return -1;
+    }
+	return 0;
+}
+
+//traverse The LinkedList Left Or Right N positions
+int moveCursor(struct node** currNode,int N){
+	if(N>0){
+		while(N>=0){
+			if((*currNode)->next != NULL)
+				(*currNode)=(*currNode)->next;
+			else
+				return -1;
+			N--;
+		}
+	}
+	else if(N<0){
+		while(N<=0){
+			if((*currNode)->next != NULL)
+				(*currNode)=(*currNode)->next;
+			else
+				return -1;
+			N++;
+		}
+	}
+	return 0;
+}
+
 
 int main(int argc, char *argv[])
 {
