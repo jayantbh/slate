@@ -352,28 +352,29 @@ void operateonLinkedList(struct node** head_ref){
 			break;
 		}
 		else if(ch=='a'||ch=='A'){
-			
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			fflush(stdin);
 			if(currNode->prev!=NULL){
 				currNode=currNode->prev;
 				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
 			}
-			//Flushing STDIN buffer to delete the extra Undesired NewLine
-			//fflush(stdin);
+			
 		}
 		else if(ch=='d'||ch=='D'){
-			
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			fflush(stdin);
 			if(currNode->next!=NULL){
 				currNode=currNode->next;
 				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
 			}
-			//Flushing STDIN buffer to delete the extra Undesired NewLine
-			//fflush(stdin);
 		}
 		else{
-			printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
 			//Flushing STDIN buffer to delete the extra Undesired NewLine
-			//fflush(stdin);
+			fflush(stdin);
+			printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
 		}
+		//Flushing STDIN buffer to delete the extra Undesired NewLine
+		fflush(stdin);
 	}
 	//system ("/bin/stty cooked");
 }
