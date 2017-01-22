@@ -17,47 +17,47 @@ struct node{
 	struct node *prev;
 };
 
-struct urnode{
+struct undoredonode{
 	struct node *link;
 	char operation;
 };
 
-int ufront=-1,urear=-1,rfront=-1,rrear=-1;
-struct urnode undostack[10],redostack[10];
+int undofront=-1,undorear=-1,redofront=-1,redorear=-1;
+struct undoredonode undostack[10],redostack[10];
 int noofcharacters[1000][1],cursorpos=0;
 
 //undo push
 
 void undoPush(struct node *currNode,char opr){
-	if(ufront==-1){
-		ufront=urear=0;
+	if(undofront==-1){
+		undofront=undorear=0;
 	}
 	else{
-		ufront=(ufront+1)%MAX;
-		if(ufront==urear){
-			urear++;
-			free(undostack[ufront].link);
+		undofront=(undofront+1)%MAX;
+		if(undofront==undorear){
+			undorear++;
+			free(undostack[undofront].link);
 		}
 	}
-	undostack[ufront].link=currNode;
-	undostack[ufront].operation=opr;
+	undostack[undofront].link=currNode;
+	undostack[undofront].operation=opr;
 }
 
 //undo pop
 
-struct urnode undoPop(){
+struct undoredonode undoPop(){
 	int pos=0;
-	/*if(ufront==-1){
+	/*if(undofront==-1){
 		return ;
 	}*/
-	if(ufront==urear){
-		pos=ufront;
-		ufront=urear=-1;
+	if(undofront==undorear){
+		pos=undofront;
+		undofront=undorear=-1;
 	}
 	else{
-		ufront--;
-		if(ufront<0){
-			ufront=9;
+		undofront--;
+		if(undofront<0){
+			undofront=9;
 		}
 	}
 	return undostack[pos];
@@ -66,35 +66,35 @@ struct urnode undoPop(){
 //redo push
 
 void redoPush(struct node *currNode,char opr){
-	if(rfront==-1){
-		rfront=rrear=0;
+	if(redofront==-1){
+		redofront=redorear=0;
 	}
 	else{
-		rfront=(rfront+1)%MAX;
-		if(rfront==rrear){
-			rrear++;
-			free(redostack[rfront].link);
+		redofront=(redofront+1)%MAX;
+		if(redofront==redorear){
+			redorear++;
+			free(redostack[redofront].link);
 		}
 	}
-	redostack[rfront].link=currNode;
-	redostack[rfront].operation=opr;
+	redostack[redofront].link=currNode;
+	redostack[redofront].operation=opr;
 }
 
 //redo pop
 
-struct urnode redoPop(){
+struct undoredonode redoPop(){
 	int pos=0;
-	/*if(ufront==-1){
+	/*if(undofront==-1){
 		return ;
 	}*/
-	if(rfront==rrear){
-		pos=rfront;
-		rfront=rrear=-1;
+	if(redofront==redorear){
+		pos=redofront;
+		redofront=redorear=-1;
 	}
 	else{
-		rfront--;
-		if(rfront<0){
-			rfront=9;
+		redofront--;
+		if(redofront<0){
+			redofront=9;
 		}
 	}
 	return redostack[pos];	
@@ -103,7 +103,7 @@ struct urnode redoPop(){
 //Undo
 
 void undo(){
-	struct urnode unode=undoPop();
+	struct undoredonode unode=undoPop();
 	if(unode.operation=='d'){
 		unode.link->prev->next=unode.link;
 		unode.link->next->prev=unode.link;
@@ -119,7 +119,7 @@ void undo(){
 //Redo
 
 void redo(){
-	struct urnode rnode=redoPop();
+	struct undoredonode rnode=redoPop();
 	if(rnode.operation=='d'){
 		rnode.link->prev->next=rnode.link;
 		rnode.link->next->prev=rnode.link;
@@ -142,6 +142,7 @@ void display(struct node* head_ref)
         printf("%c", temp->data);
         temp = temp->next;
     }
+	printf("\n");
 }
 
 //push a character at the beginning of the Linked List
@@ -161,21 +162,55 @@ void push(struct node** head_ref, char newData)
 	return;
 }
 
-//insert a character after a given node
-void insertAfter(struct node* prevNode, char newData)
+//insert a character before a given node
+void insertBefore(struct node* currNode, char newData)
 {
-	if(prevNode == NULL)
+	if(currNode == NULL){
+		printf("Error!!!\n");
 		return; //error has occurred
+	}
 	
 	struct node* newNode = (struct node*) malloc(sizeof(struct node));
 	newNode->data = newData;
+	if(currNode->prev == NULL){
+		newNode->next = currNode;
+		currNode->prev = newNode;
+		newNode->prev = NULL;
+	}
+	else{
+		newNode->next = currNode;
+		newNode->prev = currNode->prev;
+		
+		currNode->prev->next=newNode;
+		currNode->prev = newNode;
+		}
+	return;
+}
+
+
+//insert a character after a given node
+void insertAfter(struct node** currNode, char newData)
+{
+	if(*currNode == NULL ){
+		printf("Error!!!\n");
+		return; //error has occurred
+	}
 	
-	newNode->next = prevNode->next;
-	prevNode->next = newNode;
-	newNode->prev = prevNode;
-	if(newNode->next != NULL)
-		newNode->next->prev = newNode;
-	
+	struct node* newNode = (struct node*) malloc(sizeof(struct node));
+	newNode->data = newData;
+	if((*currNode)->next == NULL){
+		newNode->next = NULL;
+		(*currNode)->next = newNode;
+		newNode->prev = *currNode;
+		*currNode=(*currNode)->next;
+	}
+	else{
+		newNode->next = (*currNode)->next;
+		newNode->prev = *currNode;
+		
+		(*currNode)->next->prev=newNode;
+		(*currNode)->next = newNode;
+		}
 	return;
 }
 
@@ -225,19 +260,19 @@ void goDown(struct node* currNode)
 }
 
 //traverse the Linked List to the right, towards the tail
-void goRight(struct node* currNode)
+struct node* goRight(struct node* currNode)
 {
 	if(currNode->next != NULL)
 		currNode = currNode->next;
-	return;
+	return currNode;
 }
 
 //traverse the Linked List to the left, towards the head
-void goLeft(struct node* currNode)
+struct node* goLeft(struct node* currNode)
 {
 	if(currNode->prev != NULL)
 		currNode = currNode->prev;
-	return;
+	return currNode;
 }
 
 void writeToFile(char *filename,struct node* head_ref)
@@ -262,26 +297,67 @@ void writeToFile(char *filename,struct node* head_ref)
 }
 
 //modify the file using linkedlist
-void operateonlinkedlist(struct node* head_ref){
-	struct node* temp=head_ref;
+void operateonLinkedList(struct node** head_ref){
+	struct node *currNode=NULL;currNode=*head_ref;
 	char ch;
+	//system ("/bin/stty raw");
+	printf("\nPress I to start entering text and ~ to Exit A to move left D to move right P to display All.Press ENTER after any COMMAND\n>> ");
 	while(1){
-		printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
 		ch=getchar();
 		if(ch == 'I' || ch == 'i'){
+			//Flushing STDIN buffer to delete the extra Undesired NewLine In the File And LinkedList
+			fflush(stdin);
 			while(1){
-				if((ch = getchar()) != '~')
-					append( &head_ref,ch );
+				if((ch = getchar()) != '~'){
+					if(*head_ref != NULL){
+						if(currNode->next == NULL)
+							insertAfter( &currNode,ch );	
+						else
+							insertBefore( currNode,ch );
+					}
+					else{
+						append(&currNode,ch);
+						if(*head_ref==NULL)
+							*head_ref=currNode;
+						//currNode=NULL;
+					}
+					//printf("\n\nCurrentNode Data : %c\n\n",currNode->data);
+				}
 				else break;
 			}
 		}
 		else if(ch == '~'){
 			break;
 		}
-		else{
-			printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
+		else if(ch=='a'||ch=='A'){
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			fflush(stdin);
+			if(currNode->prev!=NULL){
+				currNode=currNode->prev;
+				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
+			}
+			
 		}
+		else if(ch=='d'||ch=='D'){
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			fflush(stdin);
+			if(currNode->next!=NULL){
+				currNode=currNode->next;
+				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
+			}
+		}
+		else if(ch == 'P' || ch == 'p'){
+			display(*head_ref);
+		}
+		else{
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			fflush(stdin);
+			printf("\nPress I to start entering text and ~ to Exit A to move left D to move right P to Display All.Press ENTER after any COMMAND\n>> ");
+		}
+		//Flushing STDIN buffer to delete the extra Undesired NewLine
+		fflush(stdin);
 	}
+	//system ("/bin/stty cooked");
 }
 
 //take the characters from the file and insert them into a linkedlist while printing them at the same time
@@ -294,9 +370,14 @@ struct node* loadFromFile(char *filename)
 	file=fopen(filename,"r");
 	
 	if (!file){
-		printf("File could not be opened. Press any key to continue! \n\a\a");
-		getchar();
-		return;
+		printf("File Not Found! Creating A New File! \n");
+		file=fopen(filename,"a");
+		if(!file){
+			printf("File Creation Failed!Try executing the Program Again!\nExiting the Program with Code 0\n\a\a");
+			exit(0);
+		}
+		fclose(file);
+		return head;
 	}
 	
 	while((ch=fgetc(file))!=EOF){
@@ -308,18 +389,60 @@ struct node* loadFromFile(char *filename)
 	fclose(file);
 }
 
+//API
+
+//Display N characters
+int displayNcharacters(struct node* currNode,int N)
+{
+	struct node* temp = currNode;
+	while (N--)
+    {
+		if(temp != NULL){
+			printf("%c", temp->data);
+			temp = temp->next;
+		}
+		else
+			return -1;
+    }
+	return 0;
+}
+
+//traverse The LinkedList Left Or Right N positions
+int moveCursor(struct node** currNode,int N){
+	if(N>0){
+		while(N>=0){
+			if((*currNode)->next != NULL)
+				(*currNode)=(*currNode)->next;
+			else
+				return -1;
+			N--;
+		}
+	}
+	else if(N<0){
+		while(N<=0){
+			if((*currNode)->next != NULL)
+				(*currNode)=(*currNode)->next;
+			else
+				return -1;
+			N++;
+		}
+	}
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
-	/*
-	// Open the file for writing
-	writeToFile(argv[1]);
-	*/
 	
 	//Load the editable Linked List
 	struct node* head = loadFromFile(argv[1]);
 	
 	//operate on the linked list to insert or delete characters
-	operateonlinkedlist(head);
+	operateonLinkedList(&head);
+	
+	//go to the new head location if any characters were inserted before current head position
+	while(head->prev != NULL)
+		head=head->prev;
 	
 	//Write linkedlist content to file
 	writeToFile(argv[1],head);
