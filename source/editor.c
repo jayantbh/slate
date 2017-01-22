@@ -161,7 +161,7 @@ void push(struct node** head_ref, char newData)
 	return;
 }
 
-//insert a character after a given node
+//insert a character before a given node
 void insertBefore(struct node* currNode, char newData)
 {
 	if(currNode == NULL){
@@ -182,6 +182,33 @@ void insertBefore(struct node* currNode, char newData)
 		
 		currNode->prev->next=newNode;
 		currNode->prev = newNode;
+		}
+	return;
+}
+
+
+//insert a character after a given node
+void insertAfter(struct node** currNode, char newData)
+{
+	if(*currNode == NULL ){
+		printf("Error!!!\n");
+		return; //error has occurred
+	}
+	
+	struct node* newNode = (struct node*) malloc(sizeof(struct node));
+	newNode->data = newData;
+	if((*currNode)->next == NULL){
+		newNode->next = NULL;
+		(*currNode)->next = newNode;
+		newNode->prev = *currNode;
+		*currNode=(*currNode)->next;
+	}
+	else{
+		newNode->next = (*currNode)->next;
+		newNode->prev = *currNode;
+		
+		(*currNode)->next->prev=newNode;
+		(*currNode)->next = newNode;
 		}
 	return;
 }
@@ -292,8 +319,8 @@ void writeToFile(char *filename,struct node* head_ref)
 }
 
 //modify the file using linkedlist
-void operateonLinkedList(struct node* head_ref){
-	struct node *currNode=NULL;currNode=head_ref;
+void operateonLinkedList(struct node** head_ref){
+	struct node *currNode=NULL;currNode=*head_ref;
 	char ch;
 	//system ("/bin/stty raw");
 	printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
@@ -304,7 +331,19 @@ void operateonLinkedList(struct node* head_ref){
 			fflush(stdin);
 			while(1){
 				if((ch = getchar()) != '~'){
-						insertBefore( currNode,ch );
+					if(*head_ref != NULL){
+						if(currNode->next == NULL)
+							insertAfter( &currNode,ch );	
+						else
+							insertBefore( currNode,ch );
+					}
+					else{
+						append(&currNode,ch);
+						if(*head_ref==NULL)
+							*head_ref=currNode;
+						//currNode=NULL;
+					}
+					//printf("\n\nCurrentNode Data : %c\n\n",currNode->data);
 				}
 				else break;
 			}
@@ -349,8 +388,13 @@ struct node* loadFromFile(char *filename)
 	file=fopen(filename,"r");
 	
 	if (!file){
-		printf("File could not be opened. Press any key to continue! \n\a\a");
-		getchar();
+		printf("File Not Found! Creating A New File! \n");
+		file=fopen(filename,"a");
+		if(!file){
+			printf("File Creation Failed!Try executing the Program Again!\nExiting the Program with Code 0\n\a\a");
+			exit(0);
+		}
+		fclose(file);
 		return head;
 	}
 	
@@ -370,7 +414,7 @@ int main(int argc, char *argv[])
 	struct node* head = loadFromFile(argv[1]);
 	
 	//operate on the linked list to insert or delete characters
-	operateonLinkedList(head);
+	operateonLinkedList(&head);
 	
 	//go to the new head location if any characters were inserted before current head position
 	while(head->prev != NULL)
@@ -382,5 +426,6 @@ int main(int argc, char *argv[])
 	display(head);
 	return 0;
 }
+
 // Green hoti Cabbage, Modi is savage xD
 // Jisse dhaniya samjha, woh pudina nikla; jisse apna samjha woh kameena nikla xD
