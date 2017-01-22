@@ -17,47 +17,47 @@ struct node{
 	struct node *prev;
 };
 
-struct urnode{
+struct undoredonode{
 	struct node *link;
 	char operation;
 };
 
-int ufront=-1,urear=-1,rfront=-1,rrear=-1;
-struct urnode undostack[10],redostack[10];
+int undofront=-1,undorear=-1,redofront=-1,redorear=-1;
+struct undoredonode undostack[10],redostack[10];
 int noofcharacters[1000][1],cursorpos=0;
 
 //undo push
 
 void undoPush(struct node *currNode,char opr){
-	if(ufront==-1){
-		ufront=urear=0;
+	if(undofront==-1){
+		undofront=undorear=0;
 	}
 	else{
-		ufront=(ufront+1)%MAX;
-		if(ufront==urear){
-			urear++;
-			free(undostack[ufront].link);
+		undofront=(undofront+1)%MAX;
+		if(undofront==undorear){
+			undorear++;
+			free(undostack[undofront].link);
 		}
 	}
-	undostack[ufront].link=currNode;
-	undostack[ufront].operation=opr;
+	undostack[undofront].link=currNode;
+	undostack[undofront].operation=opr;
 }
 
 //undo pop
 
-struct urnode undoPop(){
+struct undoredonode undoPop(){
 	int pos=0;
-	/*if(ufront==-1){
+	/*if(undofront==-1){
 		return ;
 	}*/
-	if(ufront==urear){
-		pos=ufront;
-		ufront=urear=-1;
+	if(undofront==undorear){
+		pos=undofront;
+		undofront=undorear=-1;
 	}
 	else{
-		ufront--;
-		if(ufront<0){
-			ufront=9;
+		undofront--;
+		if(undofront<0){
+			undofront=9;
 		}
 	}
 	return undostack[pos];
@@ -66,35 +66,35 @@ struct urnode undoPop(){
 //redo push
 
 void redoPush(struct node *currNode,char opr){
-	if(rfront==-1){
-		rfront=rrear=0;
+	if(redofront==-1){
+		redofront=redorear=0;
 	}
 	else{
-		rfront=(rfront+1)%MAX;
-		if(rfront==rrear){
-			rrear++;
-			free(redostack[rfront].link);
+		redofront=(redofront+1)%MAX;
+		if(redofront==redorear){
+			redorear++;
+			free(redostack[redofront].link);
 		}
 	}
-	redostack[rfront].link=currNode;
-	redostack[rfront].operation=opr;
+	redostack[redofront].link=currNode;
+	redostack[redofront].operation=opr;
 }
 
 //redo pop
 
-struct urnode redoPop(){
+struct undoredonode redoPop(){
 	int pos=0;
-	/*if(ufront==-1){
+	/*if(undofront==-1){
 		return ;
 	}*/
-	if(rfront==rrear){
-		pos=rfront;
-		rfront=rrear=-1;
+	if(redofront==redorear){
+		pos=redofront;
+		redofront=redorear=-1;
 	}
 	else{
-		rfront--;
-		if(rfront<0){
-			rfront=9;
+		redofront--;
+		if(redofront<0){
+			redofront=9;
 		}
 	}
 	return redostack[pos];	
@@ -103,7 +103,7 @@ struct urnode redoPop(){
 //Undo
 
 void undo(){
-	struct urnode unode=undoPop();
+	struct undoredonode unode=undoPop();
 	if(unode.operation=='d'){
 		unode.link->prev->next=unode.link;
 		unode.link->next->prev=unode.link;
@@ -119,7 +119,7 @@ void undo(){
 //Redo
 
 void redo(){
-	struct urnode rnode=redoPop();
+	struct undoredonode rnode=redoPop();
 	if(rnode.operation=='d'){
 		rnode.link->prev->next=rnode.link;
 		rnode.link->next->prev=rnode.link;
@@ -231,6 +231,29 @@ void goDown(struct node* currNode)
 	return;
 }
 
+//traverse The LinkedList Left Or Right N positions
+int moveCursorN(int N,struct node* currNode){
+	if(N>0){
+		while(N>=0){
+			if(currNode->next != NULL)
+				currNode=currNode->next;
+			else
+				return -1;
+			N--;
+		}
+	}
+	else if(N<0){
+		while(N<=0){
+			if(currNode->next != NULL)
+				currNode=currNode->next;
+			else
+				return -1;
+			N++;
+		}
+	}
+	return 0;
+}
+
 //traverse the Linked List to the right, towards the tail
 struct node* goRight(struct node* currNode)
 {
@@ -272,10 +295,13 @@ void writeToFile(char *filename,struct node* head_ref)
 void operateonLinkedList(struct node* head_ref){
 	struct node *currNode=NULL;currNode=head_ref;
 	char ch;
+	//system ("/bin/stty raw");
+	printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
 	while(1){
-		printf("Press I start entering text and ~ to Exit A to move left D to move right.\n>> ");
 		ch=getchar();
 		if(ch == 'I' || ch == 'i'){
+			//Flushing STDIN buffer to delete the extra Undesired NewLine In the File And LinkedList
+			fflush(stdin);
 			while(1){
 				if((ch = getchar()) != '~'){
 						insertBefore( currNode,ch );
@@ -287,21 +313,30 @@ void operateonLinkedList(struct node* head_ref){
 			break;
 		}
 		else if(ch=='a'||ch=='A'){
+			
 			if(currNode->prev!=NULL){
 				currNode=currNode->prev;
-				//printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->next->data);
+				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
 			}
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			//fflush(stdin);
 		}
 		else if(ch=='d'||ch=='D'){
+			
 			if(currNode->next!=NULL){
 				currNode=currNode->next;
-				//printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->next->data);
+				printf("Prev Character :%c\nNext Character :%c\n",currNode->prev->data,currNode->data);
 			}
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			//fflush(stdin);
 		}
 		else{
-			//printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
+			printf("\nPress I to start entering text and ~ to Exit A to move left D to move right.Press ENTER after any COMMAND\n>> ");
+			//Flushing STDIN buffer to delete the extra Undesired NewLine
+			//fflush(stdin);
 		}
 	}
+	//system ("/bin/stty cooked");
 }
 
 //take the characters from the file and insert them into a linkedlist while printing them at the same time
