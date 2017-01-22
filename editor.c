@@ -18,8 +18,8 @@ struct node* getHead(struct node* currNode)
 	return temp;
 }
 
-//display characters directly from the Linked List
-void display(struct node* currNode)
+//display all characters
+void displayAll(struct node* currNode)
 {
 	struct node* temp = getHead(currNode);
 	while (temp->next != NULL)
@@ -30,6 +30,27 @@ void display(struct node* currNode)
     return;
 }
 
+//display N characters from the current Node
+void displayCurrN(struct node* currNode, int N)
+{
+	struct node* temp = (currNode);
+	if(N<0){ //move left
+		while(temp->prev!=NULL && N<0){
+			printf("%c", temp->data);
+			temp = temp->prev;
+			N++;
+		}
+	}
+	else{ //move right
+		while (temp->next != NULL && N>0)
+    	{
+        	printf("%c", temp->data);
+        	temp = temp->next;
+        	N--;
+    	}
+	}
+    return;
+}
 
 //traverse the Linked List to the right, towards the tail
 void goRight(struct node* currNode, int n)
@@ -142,7 +163,6 @@ int main(int argc, char *argv[])
 {
 	//Load the whole file into a LinkedList and returns the tail pointer
 	struct node* currNode = loadFileToList(argv[1]);
-	display(currNode);
 	/*while(1){
 		Start the front end program somehow.
 		perform operations on the Linked List by capturing keystrokes on the frontend and mapping them to the suitable APIs
@@ -150,8 +170,10 @@ int main(int argc, char *argv[])
 		API 1. insertCharAfter(currNode,data)
 		API 2. deleteChar(currNode)
 		API 3. moveCursor(currNode, N)
-		API 4. undo()
-		API 5. redo()
+		API 4. displayAll(currNode) --> display from start to end
+		API 4. displayCurrN(currNode,N) --> displays the Linked List from start to end
+		API 5. undo()
+		API 6. redo()
 	}*/
 	//Write List back into the file
 	writeBackToFile(currNode, argv[1]);
