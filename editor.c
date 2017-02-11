@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#define MAX_STACK_SIZE 10
 
 struct node{
 	char data;
@@ -14,6 +15,54 @@ struct URnode{
 	char operation;
 	int moves;
 };
+
+struct URnode undo_stack[MAX_STACK_SIZE];
+struct URnode redo_stack[MAX_STACK_SIZE];
+int undoCursor = -1;
+int redoCursor = -1;
+
+int undoPush(struct node* currnode, char operation1, int newmoves)
+{
+    undoCursor++;
+    if(undoCursor>MAX_STACK_SIZE-1) return -1;
+    undo_stack[undoCursor]->data=currnode->data;
+    undo_stack[undoCursor]->operation=operation1;
+    undo_stack[undoCursor]->moves=newmoves;
+    return 1;
+}
+int undoPop(struct node* currnode)
+{
+    if(undoCursor<0) return -1;
+    evalURnode(&undo_stack[undoCursor],currnode);
+    redoPush(currnode,undo_stack[undoCursor]->operation,undo_stack[undoCursor]->moves);
+    undo_stack[undoCursor]->data=NULL;
+    undo_stack[undoCursor]->operation=NULL;
+    undo_stack[undoCursor]->moves=0;
+    undoCursor--;
+    return 1;
+}
+
+int redoPush(struct node* currnode, char operation1, int newmoves)
+{
+    redoCursor++;
+    if(redoCursor>MAX_STACK_SIZE-1) return -1;
+    redo_stack[redoCursor]->data=currnode->data;
+    redo_stack[redoCursor]->operation=operation1;
+    redo_stack[redoCursor]->moves=newmoves;
+    return 1;
+}
+
+int redoPop(struct node* currnode)
+{
+    if(redoCursor<0) return -1;
+    evalURnode(&redo_stack[redoCursor],currnode);
+    undoPush(currnode,redo_stack[redoCursor]->operation,redo_stack[redoCursor]->moves);
+    redo_stack[redoCursor]->data=NULL;
+    redo_stack[redoCursor]->operation=NULL;
+    redo_stack[redoCursor]->moves=0;
+    redoCursor--;
+    return 1;
+}
 
 // return the head of the LinkedList
 struct node* getHead(struct node* currNode)
@@ -169,7 +218,7 @@ void writeBackToFile(struct node* head_ref, char *filename)
 /*
 	This function evaluates the URnode that has been popped off the top of the UR stack
 */
-void evalURnode(struct URnode* urnode, struct node* currnode)
+int evalURnode(struct URnode* urnode, struct node* currnode)
 {
 	// sees the operation in the undo node and takes action
 	/*
@@ -183,16 +232,20 @@ void evalURnode(struct URnode* urnode, struct node* currnode)
 	switch(operation1){
 		case 'I':
 			deleteChar(currnode);
+			return 1;
 			break;
 		case 'D':
 		    char data1 = urnode->data;
 		    insertCharAfter(currnode,data1);
+		    return 1;
 			break;
 		case 'M':
 		    int n = currnode->moves;
 		    moveCursor(currnode,-n);
+		    return 1;
 			break;
-		default: //throw error message
+		default: 
+		    return -1;//throw error message
 			break;
 	}
 }
