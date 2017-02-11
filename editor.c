@@ -8,6 +8,13 @@ struct node{
 	struct node *prev;
 };
 
+// structure for the URnode
+struct URnode{
+	char data;
+	char operation;
+	char number;
+};
+
 // return the head of the LinkedList
 struct node* getHead(struct node* currNode)
 {
@@ -106,9 +113,11 @@ void deleteChar(struct node* currNode)
 	return;
 }
 
-//Take the characters from the file and insert them into a string (fast loading).
-//Now construct the linkedlist from the string.
-//Return the head pointer of the Linked List.
+/*
+	Take the characters from the file and insert them into a string (fast loading).
+	Now construct the linkedlist from the string.
+	Return the head pointer of the Linked List.
+*/
 struct node* loadFileToList(char *filename)
 {
 	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node* memory1;
@@ -157,6 +166,33 @@ void writeBackToFile(struct node* head_ref, char *filename)
 	fclose(file);
 }
 
+/*
+	This function evaluates the URnode that has been popped off the top of the UR stack
+*/
+void evalURnode(struct URnode* urnode, struct node* newnode)
+{
+	char data1 = urnode->data;
+	char operation1 = urnode->operation;
+	// sees the operation in the undo node and takes action
+	/*
+		1. If the operation in the UR stack is insert then we delete the node at the current location.
+		2. If the operation in the UR stack is delete then we create a new node and insert the node
+		after the current location.
+		3. If the operation is move then we check the number of movements and its sign. Next we move
+		the cursor accordingly in the opposite direction.
+	*/
+	switch(operation1){
+		case 'I':
+			
+			break;
+		case 'D':
+			break;
+		case 'M':
+			break;
+		default: //throw error message
+			break;
+	}
+}
 
 //The MAIN method
 int main(int argc, char *argv[])
