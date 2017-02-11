@@ -12,7 +12,7 @@ struct node{
 struct URnode{
 	char data;
 	char operation;
-	char number;
+	int moves;
 };
 
 // return the head of the LinkedList
@@ -169,10 +169,8 @@ void writeBackToFile(struct node* head_ref, char *filename)
 /*
 	This function evaluates the URnode that has been popped off the top of the UR stack
 */
-void evalURnode(struct URnode* urnode, struct node* newnode)
+void evalURnode(struct URnode* urnode, struct node* currnode)
 {
-	char data1 = urnode->data;
-	char operation1 = urnode->operation;
 	// sees the operation in the undo node and takes action
 	/*
 		1. If the operation in the UR stack is insert then we delete the node at the current location.
@@ -181,13 +179,18 @@ void evalURnode(struct URnode* urnode, struct node* newnode)
 		3. If the operation is move then we check the number of movements and its sign. Next we move
 		the cursor accordingly in the opposite direction.
 	*/
+	char operation1 = urnode->operation;
 	switch(operation1){
 		case 'I':
-			
+			deleteChar(currnode);
 			break;
 		case 'D':
+		    char data1 = urnode->data;
+		    insertCharAfter(currnode,data1);
 			break;
 		case 'M':
+		    int n = currnode->moves;
+		    moveCursor(currnode,-n);
 			break;
 		default: //throw error message
 			break;
