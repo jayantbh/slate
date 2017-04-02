@@ -1,15 +1,7 @@
-/* 
-	After two years of cursing vim and getting too friendly with GUI based text editors, 4 boys turn to the once forsaken text editor for 
-inspiration and guidance on their final year project.
-	Will the CLI text editor Gods look down with benevolence on the return of the prodigal sons, or have they prepared some sort of trial
-which these 4 will have to undergo in order to prove themselves worthy? Stay tuned to know more!!
-
-*/
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define MAX 10
+#define MAX_STACK_SIZE 10
 
 struct node{
 	char data;
@@ -17,316 +9,290 @@ struct node{
 	struct node *prev;
 };
 
-struct urnode{
-	struct node *link;
+// structure for the undoRedoNode
+struct undoRedoNode{
+	char data;
 	char operation;
+	int moves;
 };
 
-int ufront=-1,urear=-1,rfront=-1,rrear=-1;
-struct urnode undostack[10],redostack[10];
-int noofcharacters[1000][1],cursorpos=0;
+struct undoRedoNode undo_stack[MAX_STACK_SIZE];
+struct undoRedoNode redo_stack[MAX_STACK_SIZE];
+int undoCursor = -1;
+int redoCursor = -1;
 
-//undo push
-
-void undoPush(struct node *currNode,char opr){
-	if(ufront==-1){
-		ufront=urear=0;
-	}
-	else{
-		ufront=(ufront+1)%MAX;
-		if(ufront==urear){
-			urear++;
-			free(undostack[ufront].link);
-		}
-	}
-	undostack[ufront].link=currNode;
-	undostack[ufront].operation=opr;
-}
-
-//undo pop
-
-struct urnode undoPop(){
-	int pos=0;
-	/*if(ufront==-1){
-		return ;
-	}*/
-	if(ufront==urear){
-		pos=ufront;
-		ufront=urear=-1;
-	}
-	else{
-		ufront--;
-		if(ufront<0){
-			ufront=9;
-		}
-	}
-	return undostack[pos];
-}
-
-//redo push
-
-void redoPush(struct node *currNode,char opr){
-	if(rfront==-1){
-		rfront=rrear=0;
-	}
-	else{
-		rfront=(rfront+1)%MAX;
-		if(rfront==rrear){
-			rrear++;
-			free(redostack[rfront].link);
-		}
-	}
-	redostack[rfront].link=currNode;
-	redostack[rfront].operation=opr;
-}
-
-//redo pop
-
-struct urnode redoPop(){
-	int pos=0;
-	/*if(ufront==-1){
-		return ;
-	}*/
-	if(rfront==rrear){
-		pos=rfront;
-		rfront=rrear=-1;
-	}
-	else{
-		rfront--;
-		if(rfront<0){
-			rfront=9;
-		}
-	}
-	return redostack[pos];	
-}
-
-//Undo
-
-void undo(){
-	struct urnode unode=undoPop();
-	if(unode.operation=='d'){
-		unode.link->prev->next=unode.link;
-		unode.link->next->prev=unode.link;
-		redoPush(unode.link,'i');
-	}
-	else{
-		unode.link->prev=unode.link->next;
-		unode.link->next=unode.link->prev;
-		redoPush(unode.link,'d');
-	}
-}
-
-//Redo
-
-void redo(){
-	struct urnode rnode=redoPop();
-	if(rnode.operation=='d'){
-		rnode.link->prev->next=rnode.link;
-		rnode.link->next->prev=rnode.link;
-		undoPush(rnode.link,'i');
-	}
-	else{
-		rnode.link->prev=rnode.link->next;
-		rnode.link->next=rnode.link->prev;
-		undoPush(rnode.link,'d');
-	}
-}
-
-//this link always point to first Link
-
-void display(struct node* head_ref)
+// return the head of the LinkedList
+struct node* getHead(struct node* currNode)
 {
-	struct node* temp = head_ref;
-	while (temp != NULL)
+	struct node* temp = currNode;
+	while(temp->prev!=NULL){
+		temp = temp->prev;
+	}
+	return temp;
+}
+
+//display all characters
+void displayAll(struct node* currNode)
+{
+	struct node* temp = getHead(currNode);
+	while (temp->next != NULL)
     {
         printf("%c", temp->data);
         temp = temp->next;
     }
+    return;
 }
 
-//push a character at the beginning of the Linked List
-void push(struct node** head_ref, char newData)
+//display N characters from the current Node
+void displayCurrN(struct node* currNode, int N)
 {
-	struct node* newNode = (struct node*) malloc(sizeof(struct node));
-	newNode->data = newData;
-	
-	newNode->next = (*head_ref);
-	newNode->prev = NULL;
-		
-	if((*head_ref) != NULL)
-		(*head_ref)->prev = newNode;
-	
-	(*head_ref) = newNode;
-	
-	return;
-}
-
-//insert a character after a given node
-void insertAfter(struct node* prevNode, char newData)
-{
-	if(prevNode == NULL)
-		return; //error has occurred
-	
-	struct node* newNode = (struct node*) malloc(sizeof(struct node));
-	newNode->data = newData;
-	
-	newNode->next = prevNode->next;
-	prevNode->next = newNode;
-	newNode->prev = prevNode;
-	if(newNode->next != NULL)
-		newNode->next->prev = newNode;
-	
-	return;
-}
-
-//append a character to the end of the Linked List
-void append(struct node** head_ref, char newData)
-{
-	struct node* newNode = (struct node*) malloc(sizeof(struct node));
-	newNode->data = newData;
-	newNode->next = NULL;
-	
-	struct node* last = (*head_ref);
-	
-	if((*head_ref) == NULL){
-		newNode->prev = NULL;
-		*head_ref = newNode;
-		return;
+	struct node* temp = (currNode);
+	if(N<0){ //move left
+		while(temp->prev!=NULL && N<0){
+			printf("%c", temp->data);
+			temp = temp->prev;
+			N++;
+		}
 	}
-	while(last->next != NULL)
-		last = last->next;
-	
-	last->next = newNode;
-	newNode->prev = last;
-	
-	return;
-}
-
-//traverse the Linked List up, towards the head
-void goUp(struct node* currNode)
-{
-	int i=0;
-	while(currNode->prev != NULL && i<48 && currNode->data != '\n'){
-		currNode = currNode->prev;
-		i++;
+	else{ //move right
+		while (temp->next != NULL && N>0)
+    	{
+        	printf("%c", temp->data);
+        	temp = temp->next;
+        	N--;
+    	}
 	}
-	return;
-}
-
-//traverse the Linked List down, towards the tail
-void goDown(struct node* currNode)
-{
-	int i=0;
-	while(currNode->next != NULL && i<48 && currNode->data !='\n'){
-		currNode = currNode->next;
-		i++;
-	}
-	return;
+    return;
 }
 
 //traverse the Linked List to the right, towards the tail
-void goRight(struct node* currNode)
+struct node* goRight(struct node* currNode, int n)
 {
-	if(currNode->next != NULL)
-		currNode = currNode->next;
-	return;
+	struct node* temp = currNode;
+	while(temp->next != NULL && n>0){
+		temp = temp->next;
+		n--;
+	}
+	return temp;
 }
 
 //traverse the Linked List to the left, towards the head
-void goLeft(struct node* currNode)
+struct node* goLeft(struct node* currNode, int n)
 {
-	if(currNode->prev != NULL)
-		currNode = currNode->prev;
-	return;
-}
-
-void writeToFile(char *filename,struct node* head_ref)
-{
-	FILE *file = fopen(filename, "w+");;
-	char ch;
-	
-	if (!file){
-		printf("File could not be opened. Press any key to continue! \n\a\a");
-		getchar();
-		return;
+	struct node* temp = currNode;
+	if(temp->prev != NULL && n<0){
+		temp = temp->prev;
+		n++;
 	}
-	
-	struct node* temp = head_ref;
-	while (temp != NULL)
-    {
-        fputc( temp->data, file );
-		temp=temp->next;
-    }
-	
-	fclose(file);
+	return temp;
 }
 
-//modify the file using linkedlist
-void operateonlinkedlist(struct node* head_ref){
-	struct node* temp=head_ref;
-	char ch;
-	while(1){
-		printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
-		ch=getchar();
-		if(ch == 'I' || ch == 'i'){
-			while(1){
-				if((ch = getchar()) != '~')
-					append( &head_ref,ch );
-				else break;
-			}
-		}
-		else if(ch == '~'){
-			break;
-		}
-		else{
-			printf("Press I and Enter to start entering text and ~ and Enter to Exit.\n>> ");
-		}
-	}
-}
+//API METHODS
 
-//take the characters from the file and insert them into a linkedlist while printing them at the same time
-
-struct node* loadFromFile(char *filename)
+int undoPush(struct node* currnode, char operation1, int newmoves)
 {
-	struct node* head = NULL;
+	undoCursor++;
+	if(undoCursor>MAX_STACK_SIZE-1) return -1;
+	undo_stack[undoCursor].data=currnode->data;
+	undo_stack[undoCursor].operation=operation1;
+	undo_stack[undoCursor].moves=newmoves;
+	return 1;
+}
+
+int redoPush(struct node* currnode, char operation1, int newmoves)
+{
+	redoCursor++;
+	if(redoCursor>MAX_STACK_SIZE-1) return -1;
+	redo_stack[redoCursor].data=currnode->data;
+	redo_stack[redoCursor].operation=operation1;
+	redo_stack[redoCursor].moves=newmoves;
+	return 1;
+}
+
+
+int undoPop(struct node* currnode)
+{
+	if(undoCursor<0) return -1;
+	evalURnode(&undo_stack[undoCursor], currnode);
+	redoPush(currnode, undo_stack[undoCursor].operation, undo_stack[undoCursor].moves);
+	undo_stack[undoCursor].data = '\0';
+	undo_stack[undoCursor].operation = '\0';
+	undo_stack[undoCursor].moves=0;
+	undoCursor--;
+	return 1;
+}
+
+
+int redoPop(struct node* currnode)
+{
+	if(redoCursor<0) return -1;
+	evalURnode(&redo_stack[redoCursor],currnode);
+	undoPush(currnode,redo_stack[redoCursor].operation,redo_stack[redoCursor].moves);
+	redo_stack[redoCursor].data = '\0';
+	redo_stack[redoCursor].operation = '\0';
+	redo_stack[redoCursor].moves=0;
+	redoCursor--;
+	return 1;
+}
+
+//API for inserting a character after a given node
+int insertCharAfter(struct node* currNode, char newData)
+{
+	if(currNode == NULL) return -1; //error has occurred
+	struct node* newNode = (struct node*) malloc(sizeof(struct node));
+	newNode->data = newData;
+	newNode->next = currNode->next;
+	currNode->next = newNode;
+	newNode->prev = currNode;
+	if(newNode->next != NULL) newNode->next->prev = newNode;
+	undoPush(newNode,'I',0); // when a new character is inserted it is pushed onto the undo stack
+	return 1;
+}
+
+//API for deleting a character at the current node
+int deleteChar(struct node* currNode)
+{
+	if(currNode == NULL) return -1; //error has occurred
+	if(currNode->prev!=NULL) 
+		currNode->prev->next = currNode->next;
+	else
+		currNode->next->prev = NULL;
+	if(currNode->next!=NULL) 
+		currNode->next->prev = currNode->prev;
+	else
+		currNode->prev->next = NULL;
+	undoPush(currNode,'D',0); // when a new character is deleted it is pushed onto the undo stack
+	free(currNode);
+	return 1;
+}
+
+/*
+	Take the characters from the file and insert them into a string (fast loading).
+	Now construct the linkedlist from the string.
+	Return the head pointer of the Linked List.
+*/
+struct node* loadFileToList(char *filename)
+{
+	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node* memory1;
+	head->prev = head->next = NULL;
+	char* list = malloc(100000); char ch;
+	int n = 0, i=0;
 	FILE *file;
-	char ch;
-	file=fopen(filename,"r");
-	
+	file = fopen(filename,"r+");
 	if (!file){
-		printf("File could not be opened. Press any key to continue! \n\a\a");
-		getchar();
-		return;
+		file = fopen(filename,"w+");
+		if(!file){
+			printf("File could not be opened. Press any key to continue! \n\a\a");
+			getchar();
+			return NULL;
+		}
 	}
-	
 	while((ch=fgetc(file))!=EOF){
-		append(&head, ch);
+		list[n++] = (char)ch;
 	}
-	
-	display(head);
-	return head;
 	fclose(file);
+	list[n] = '\0';
+	head->data = list[0];
+	while(list[i]!='\0'){
+		i++;
+		memory1 = (struct node*)malloc(sizeof(struct node));
+   		memory1->data = list[i];
+   		memory1->prev = head;
+   		memory1->next = NULL;
+   		head->next = memory1;
+	   	head = memory1;
+	}
+	printf("\nFile Loaded!\n");
+	return getHead(head);
 }
 
+//write the linked list back into the file
+void writeBackToFile(struct node* head_ref, char *filename)
+{
+	head_ref = getHead(head_ref);
+	FILE *file = fopen(filename,"w");
+	if (!file){		printf("File could not be opened. Press any key to continue! \n\a\a");		getchar();		return;	}
+	while(head_ref->next != NULL){
+		fputc(head_ref->data, file);
+		head_ref = head_ref->next;
+	}
+	fclose(file);
+}
+//API for cursor handling combining goRight() and goLeft()
+struct node* moveCursor(struct node* currNode, int n)
+{
+	struct node* temp = currNode;
+	if(n>0){
+		temp = goRight(temp, n);
+		undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+	}
+	else{
+		temp = goLeft(temp, n);
+		undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+	}
+	return temp;
+}
+/*
+	This function evaluates the undoRedoNode that has been popped off the top of the UR stack
+*/
+int evalURnode(struct undoRedoNode* undoRedoNode, struct node* currnode)
+{
+	// sees the operation in the undo node and takes action
+	/*
+		1. If the operation in the UR stack is insert then we delete the node at the current location.
+		2. If the operation in the UR stack is delete then we create a new node and insert the node
+		after the current location.
+		3. If the operation is move then we check the number of movements and its sign. Next we move
+		the cursor accordingly in the opposite direction.
+	*/
+	char operation1 = undoRedoNode->operation;
+	switch(operation1){
+		case 'I':
+			return deleteChar(currnode); //return 1 for successful deletion and -1 for some error
+		case 'D':
+		    return insertCharAfter(currnode, undoRedoNode->data); //return 1 for successful insertion and -1 for some error
+		case 'M':
+		    moveCursor(currnode, -1 * (undoRedoNode->moves)); //Move Cursor to a specified position
+			return 1;
+		default: 
+		    return -1;//throw error message
+			// Committer note:
+			// Maybe use a `throw` here? And why is there a break if there's a return?
+			// Does no one review PRs anymore?
+			// break;
+	}
+}
+
+
+//The MAIN method
 int main(int argc, char *argv[])
 {
-	/*
-	// Open the file for writing
-	writeToFile(argv[1]);
-	*/
-	
-	//Load the editable Linked List
-	struct node* head = loadFromFile(argv[1]);
-	
-	//operate on the linked list to insert or delete characters
-	operateonlinkedlist(head);
-	
-	//Write linkedlist content to file
-	writeToFile(argv[1],head);
-	
-	display(head);
+	//Load the whole file into a LinkedList and returns the tail pointer
+	struct node* currNode = loadFileToList(argv[1]);
+	insertCharAfter(currNode,'H');currNode = moveCursor(currNode,1);//currNode=currNode->next;
+	insertCharAfter(currNode,'I');currNode = moveCursor(currNode,1);//currNode=currNode->next;
+	displayAll(currNode);
+	//undoPop(currNode);
+	//displayAll(currNode);
+	//deleteChar(currNode);
+	//printf('\n');
+	//displayAll(currNode);
+	/*while(1){
+		Start the front end program somehow.
+		perform operations on the Linked List by capturing keystrokes on the frontend and mapping them to the suitable APIs
+		provided by the backend.
+		API 1. insertCharAfter(currNode,data), undoPush()
+		API 2. deleteChar(currNode),
+		API 3. moveCursor(currNode, N)
+		API 4. displayAll(currNode) --> display from start to end
+		API 4. displayCurrN(currNode,N) --> displays the Linked List from start to end
+		API 5. undo()
+		API 6. redo()
+	}*/
+	//Write List back into the file
+	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
 
-// Green hoti Cabbage, Modi is savage xD
-// Jisse dhaniya samjha, woh pudina nikla; jisse apna samjha woh kameena nikla xD
+
+
