@@ -9,15 +9,15 @@ struct node{
 	struct node *prev;
 };
 
-// structure for the URnode
-struct URnode{
+// structure for the undoRedoNode
+struct undoRedoNode{
 	char data;
 	char operation;
 	int moves;
 };
 
-struct URnode undo_stack[MAX_STACK_SIZE];
-struct URnode redo_stack[MAX_STACK_SIZE];
+struct undoRedoNode undo_stack[MAX_STACK_SIZE];
+struct undoRedoNode redo_stack[MAX_STACK_SIZE];
 int undoCursor = -1;
 int redoCursor = -1;
 
@@ -96,27 +96,32 @@ void moveCursor(struct node* currNode, int n)
 }
 
 //API for inserting a character after a given node
-void insertCharAfter(struct node* currNode, char newData)
+int insertCharAfter(struct node* currNode, char newData)
 {
-	if(currNode == NULL) return; //error has occurred
+	if(currNode == NULL) return -1; //error has occurred
 	struct node* newNode = (struct node*) malloc(sizeof(struct node));
 	newNode->data = newData;
 	newNode->next = currNode->next;
 	currNode->next = newNode;
 	newNode->prev = currNode;
 	if(newNode->next != NULL) newNode->next->prev = newNode;
-	return;
+	return 1;
 }
 
 //API for deleting a character at the current node
-void deleteChar(struct node* currNode)
+int deleteChar(struct node* currNode)
 {
-	if(currNode == NULL) return; //error has occurred
-	if(currNode->prev!=NULL) currNode->prev->next = currNode->next;
-	if(currNode->next!=NULL) currNode->next->prev = currNode->prev;
-	currNode->prev = NULL;
-	currNode->next = NULL;
-	return;
+	if(currNode == NULL) return -1; //error has occurred
+	if(currNode->prev!=NULL) 
+		currNode->prev->next = currNode->next;
+	else
+		currNode->next->prev = NULL;
+	if(currNode->next!=NULL) 
+		currNode->next->prev = currNode->prev;
+	else
+		currNode->prev->next = NULL;
+	free(currNode);
+	return 1;
 }
 
 /*
@@ -127,7 +132,7 @@ void deleteChar(struct node* currNode)
 struct node* loadFileToList(char *filename)
 {
 	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node* memory1;
-	head->prev = NULL, head->next = NULL;
+	head->prev = head->next = NULL;
 	char* list = malloc(100000); char ch;
 	int n = 0, i=0;
 	FILE *file;
@@ -173,9 +178,9 @@ void writeBackToFile(struct node* head_ref, char *filename)
 }
 
 /*
-	This function evaluates the URnode that has been popped off the top of the UR stack
+	This function evaluates the undoRedoNode that has been popped off the top of the UR stack
 */
-int evalURnode(struct URnode* urnode, struct node* currnode)
+int evalURnode(struct undoRedoNode* undoRedoNode, struct node* currnode)
 {
 	// sees the operation in the undo node and takes action
 	/*
@@ -185,22 +190,15 @@ int evalURnode(struct URnode* urnode, struct node* currnode)
 		3. If the operation is move then we check the number of movements and its sign. Next we move
 		the cursor accordingly in the opposite direction.
 	*/
-	char operation1 = urnode->operation;
+	char operation1 = undoRedoNode->operation;
 	switch(operation1){
 		case 'I':
-			deleteChar(currnode);
-			return 1;
-			break;
+			return deleteChar(currnode); //return 1 for successful deletion and -1 for some error
 		case 'D':
-		    insertCharAfter(currnode, urnode->data);
-		    return 1;
-			break;
+		    return insertCharAfter(currnode, undoRedoNode->data); //return 1 for successful insertion and -1 for some error
 		case 'M':
-			// Committer note:
-			// This node doesn't even have a moves item in it. What was being attempted here?
-		    // moveCursor(currnode, -1 * (currnode->moves));
-		    return 1;
-			break;
+		    moveCursor(currnode, -1 * (undoRedoNode->moves)); //Move Cursor to a specified position
+			return 1;
 		default: 
 		    return -1;//throw error message
 			// Committer note:
@@ -210,11 +208,51 @@ int evalURnode(struct URnode* urnode, struct node* currnode)
 	}
 }
 
-int undoPush(struct node*, char, int);
-int undoPop(struct node*);
-int redoPush(struct node*, char, int);
-int redoPop(struct node*);
+int undoPush(struct node* currnode, char operation1, int newmoves)
+{
+	undoCursor++;
+	if(undoCursor>MAX_STACK_SIZE-1) return -1;
+	undo_stack[undoCursor].data=currnode->data;
+	undo_stack[undoCursor].operation=operation1;
+	undo_stack[undoCursor].moves=newmoves;
+	return 1;
+}
 
+int redoPush(struct node* currnode, char operation1, int newmoves)
+{
+	redoCursor++;
+	if(redoCursor>MAX_STACK_SIZE-1) return -1;
+	redo_stack[redoCursor].data=currnode->data;
+	redo_stack[redoCursor].operation=operation1;
+	redo_stack[redoCursor].moves=newmoves;
+	return 1;
+}
+
+
+int undoPop(struct node* currnode)
+{
+	if(undoCursor<0) return -1;
+	evalURnode(&undo_stack[undoCursor], currnode);
+	redoPush(currnode, undo_stack[undoCursor].operation, undo_stack[undoCursor].moves);
+	undo_stack[undoCursor].data = '\0';
+	undo_stack[undoCursor].operation = '\0';
+	undo_stack[undoCursor].moves=0;
+	undoCursor--;
+	return 1;
+}
+
+
+int redoPop(struct node* currnode)
+{
+	if(redoCursor<0) return -1;
+	evalURnode(&redo_stack[redoCursor],currnode);
+	undoPush(currnode,redo_stack[redoCursor].operation,redo_stack[redoCursor].moves);
+	redo_stack[redoCursor].data = '\0';
+	redo_stack[redoCursor].operation = '\0';
+	redo_stack[redoCursor].moves=0;
+	redoCursor--;
+	return 1;
+}
 //The MAIN method
 int main(int argc, char *argv[])
 {
@@ -235,48 +273,4 @@ int main(int argc, char *argv[])
 	//Write List back into the file
 	writeBackToFile(currNode, argv[1]);
 	return 0;
-}
-
-int undoPush(struct node* currnode, char operation1, int newmoves)
-{
-	undoCursor++;
-	if(undoCursor>MAX_STACK_SIZE-1) return -1;
-	undo_stack[undoCursor].data=currnode->data;
-	undo_stack[undoCursor].operation=operation1;
-	undo_stack[undoCursor].moves=newmoves;
-	return 1;
-}
-
-int undoPop(struct node* currnode)
-{
-	if(undoCursor<0) return -1;
-	evalURnode(&undo_stack[undoCursor], currnode);
-	redoPush(currnode, undo_stack[undoCursor].operation, undo_stack[undoCursor].moves);
-	undo_stack[undoCursor].data = '\0';
-	undo_stack[undoCursor].operation = '\0';
-	undo_stack[undoCursor].moves=0;
-	undoCursor--;
-	return 1;
-}
-
-int redoPush(struct node* currnode, char operation1, int newmoves)
-{
-	redoCursor++;
-	if(redoCursor>MAX_STACK_SIZE-1) return -1;
-	redo_stack[redoCursor].data=currnode->data;
-	redo_stack[redoCursor].operation=operation1;
-	redo_stack[redoCursor].moves=newmoves;
-	return 1;
-}
-
-int redoPop(struct node* currnode)
-{
-	if(redoCursor<0) return -1;
-	evalURnode(&redo_stack[redoCursor],currnode);
-	undoPush(currnode,redo_stack[redoCursor].operation,redo_stack[redoCursor].moves);
-	redo_stack[redoCursor].data = '\0';
-	redo_stack[redoCursor].operation = '\0';
-	redo_stack[redoCursor].moves=0;
-	redoCursor--;
-	return 1;
 }
