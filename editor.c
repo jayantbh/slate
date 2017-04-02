@@ -66,33 +66,73 @@ void displayCurrN(struct node* currNode, int N)
 }
 
 //traverse the Linked List to the right, towards the tail
-void goRight(struct node* currNode, int n)
+struct node* goRight(struct node* currNode, int n)
 {
-	if(currNode->next != NULL && n>0){
-		currNode = currNode->next;
+	struct node* temp = currNode;
+	while(temp->next != NULL && n>0){
+		temp = temp->next;
 		n--;
 	}
-	return;
+	return temp;
 }
 
 //traverse the Linked List to the left, towards the head
-void goLeft(struct node* currNode, int n)
+struct node* goLeft(struct node* currNode, int n)
 {
-	if(currNode->prev != NULL && n<0){
-		currNode = currNode->prev;
+	struct node* temp = currNode;
+	if(temp->prev != NULL && n<0){
+		temp = temp->prev;
 		n++;
 	}
-	return;
+	return temp;
 }
 
 //API METHODS
 
-//API for cursor handling combining goRight() and goLeft()
-void moveCursor(struct node* currNode, int n)
+int undoPush(struct node* currnode, char operation1, int newmoves)
 {
-	if(n>0) goRight(currNode, n);
-	else goLeft(currNode, n);
-	return;
+	undoCursor++;
+	if(undoCursor>MAX_STACK_SIZE-1) return -1;
+	undo_stack[undoCursor].data=currnode->data;
+	undo_stack[undoCursor].operation=operation1;
+	undo_stack[undoCursor].moves=newmoves;
+	return 1;
+}
+
+int redoPush(struct node* currnode, char operation1, int newmoves)
+{
+	redoCursor++;
+	if(redoCursor>MAX_STACK_SIZE-1) return -1;
+	redo_stack[redoCursor].data=currnode->data;
+	redo_stack[redoCursor].operation=operation1;
+	redo_stack[redoCursor].moves=newmoves;
+	return 1;
+}
+
+
+int undoPop(struct node* currnode)
+{
+	if(undoCursor<0) return -1;
+	evalURnode(&undo_stack[undoCursor], currnode);
+	redoPush(currnode, undo_stack[undoCursor].operation, undo_stack[undoCursor].moves);
+	undo_stack[undoCursor].data = '\0';
+	undo_stack[undoCursor].operation = '\0';
+	undo_stack[undoCursor].moves=0;
+	undoCursor--;
+	return 1;
+}
+
+
+int redoPop(struct node* currnode)
+{
+	if(redoCursor<0) return -1;
+	evalURnode(&redo_stack[redoCursor],currnode);
+	undoPush(currnode,redo_stack[redoCursor].operation,redo_stack[redoCursor].moves);
+	redo_stack[redoCursor].data = '\0';
+	redo_stack[redoCursor].operation = '\0';
+	redo_stack[redoCursor].moves=0;
+	redoCursor--;
+	return 1;
 }
 
 //API for inserting a character after a given node
@@ -105,6 +145,7 @@ int insertCharAfter(struct node* currNode, char newData)
 	currNode->next = newNode;
 	newNode->prev = currNode;
 	if(newNode->next != NULL) newNode->next->prev = newNode;
+	undoPush(newNode,'I',0); // when a new character is inserted it is pushed onto the undo stack
 	return 1;
 }
 
@@ -120,6 +161,7 @@ int deleteChar(struct node* currNode)
 		currNode->next->prev = currNode->prev;
 	else
 		currNode->prev->next = NULL;
+	undoPush(currNode,'D',0); // when a new character is deleted it is pushed onto the undo stack
 	free(currNode);
 	return 1;
 }
@@ -176,7 +218,20 @@ void writeBackToFile(struct node* head_ref, char *filename)
 	}
 	fclose(file);
 }
-
+//API for cursor handling combining goRight() and goLeft()
+struct node* moveCursor(struct node* currNode, int n)
+{
+	struct node* temp = currNode;
+	if(n>0){
+		temp = goRight(temp, n);
+		undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+	}
+	else{
+		temp = goLeft(temp, n);
+		undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+	}
+	return temp;
+}
 /*
 	This function evaluates the undoRedoNode that has been popped off the top of the UR stack
 */
@@ -208,62 +263,26 @@ int evalURnode(struct undoRedoNode* undoRedoNode, struct node* currnode)
 	}
 }
 
-int undoPush(struct node* currnode, char operation1, int newmoves)
-{
-	undoCursor++;
-	if(undoCursor>MAX_STACK_SIZE-1) return -1;
-	undo_stack[undoCursor].data=currnode->data;
-	undo_stack[undoCursor].operation=operation1;
-	undo_stack[undoCursor].moves=newmoves;
-	return 1;
-}
 
-int redoPush(struct node* currnode, char operation1, int newmoves)
-{
-	redoCursor++;
-	if(redoCursor>MAX_STACK_SIZE-1) return -1;
-	redo_stack[redoCursor].data=currnode->data;
-	redo_stack[redoCursor].operation=operation1;
-	redo_stack[redoCursor].moves=newmoves;
-	return 1;
-}
-
-
-int undoPop(struct node* currnode)
-{
-	if(undoCursor<0) return -1;
-	evalURnode(&undo_stack[undoCursor], currnode);
-	redoPush(currnode, undo_stack[undoCursor].operation, undo_stack[undoCursor].moves);
-	undo_stack[undoCursor].data = '\0';
-	undo_stack[undoCursor].operation = '\0';
-	undo_stack[undoCursor].moves=0;
-	undoCursor--;
-	return 1;
-}
-
-
-int redoPop(struct node* currnode)
-{
-	if(redoCursor<0) return -1;
-	evalURnode(&redo_stack[redoCursor],currnode);
-	undoPush(currnode,redo_stack[redoCursor].operation,redo_stack[redoCursor].moves);
-	redo_stack[redoCursor].data = '\0';
-	redo_stack[redoCursor].operation = '\0';
-	redo_stack[redoCursor].moves=0;
-	redoCursor--;
-	return 1;
-}
 //The MAIN method
 int main(int argc, char *argv[])
 {
 	//Load the whole file into a LinkedList and returns the tail pointer
 	struct node* currNode = loadFileToList(argv[1]);
+	insertCharAfter(currNode,'H');currNode = moveCursor(currNode,1);//currNode=currNode->next;
+	insertCharAfter(currNode,'I');currNode = moveCursor(currNode,1);//currNode=currNode->next;
+	displayAll(currNode);
+	//undoPop(currNode);
+	//displayAll(currNode);
+	//deleteChar(currNode);
+	//printf('\n');
+	//displayAll(currNode);
 	/*while(1){
 		Start the front end program somehow.
 		perform operations on the Linked List by capturing keystrokes on the frontend and mapping them to the suitable APIs
 		provided by the backend.
-		API 1. insertCharAfter(currNode,data)
-		API 2. deleteChar(currNode)
+		API 1. insertCharAfter(currNode,data), undoPush()
+		API 2. deleteChar(currNode),
 		API 3. moveCursor(currNode, N)
 		API 4. displayAll(currNode) --> display from start to end
 		API 4. displayCurrN(currNode,N) --> displays the Linked List from start to end
@@ -274,3 +293,6 @@ int main(int argc, char *argv[])
 	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
+
+
+
