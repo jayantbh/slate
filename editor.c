@@ -21,49 +21,6 @@ struct URnode redo_stack[MAX_STACK_SIZE];
 int undoCursor = -1;
 int redoCursor = -1;
 
-int undoPush(struct node* currnode, char operation1, int newmoves)
-{
-    undoCursor++;
-    if(undoCursor>MAX_STACK_SIZE-1) return -1;
-    undo_stack[undoCursor]->data=currnode->data;
-    undo_stack[undoCursor]->operation=operation1;
-    undo_stack[undoCursor]->moves=newmoves;
-    return 1;
-}
-int undoPop(struct node* currnode)
-{
-    if(undoCursor<0) return -1;
-    evalURnode(&undo_stack[undoCursor],currnode);
-    redoPush(currnode,undo_stack[undoCursor]->operation,undo_stack[undoCursor]->moves);
-    undo_stack[undoCursor]->data=NULL;
-    undo_stack[undoCursor]->operation=NULL;
-    undo_stack[undoCursor]->moves=0;
-    undoCursor--;
-    return 1;
-}
-
-int redoPush(struct node* currnode, char operation1, int newmoves)
-{
-    redoCursor++;
-    if(redoCursor>MAX_STACK_SIZE-1) return -1;
-    redo_stack[redoCursor]->data=currnode->data;
-    redo_stack[redoCursor]->operation=operation1;
-    redo_stack[redoCursor]->moves=newmoves;
-    return 1;
-}
-
-int redoPop(struct node* currnode)
-{
-    if(redoCursor<0) return -1;
-    evalURnode(&redo_stack[redoCursor],currnode);
-    undoPush(currnode,redo_stack[redoCursor]->operation,redo_stack[redoCursor]->moves);
-    redo_stack[redoCursor]->data=NULL;
-    redo_stack[redoCursor]->operation=NULL;
-    redo_stack[redoCursor]->moves=0;
-    redoCursor--;
-    return 1;
-}
-
 // return the head of the LinkedList
 struct node* getHead(struct node* currNode)
 {
@@ -180,7 +137,7 @@ struct node* loadFileToList(char *filename)
 		if(!file){
 			printf("File could not be opened. Press any key to continue! \n\a\a");
 			getchar();
-			return;
+			return NULL;
 		}
 	}
 	while((ch=fgetc(file))!=EOF){
@@ -235,20 +192,28 @@ int evalURnode(struct URnode* urnode, struct node* currnode)
 			return 1;
 			break;
 		case 'D':
-		    char data1 = urnode->data;
-		    insertCharAfter(currnode,data1);
+		    insertCharAfter(currnode, urnode->data);
 		    return 1;
 			break;
 		case 'M':
-		    int n = currnode->moves;
-		    moveCursor(currnode,-n);
+			// Committer note:
+			// This node doesn't even have a moves item in it. What was being attempted here?
+		    // moveCursor(currnode, -1 * (currnode->moves));
 		    return 1;
 			break;
 		default: 
 		    return -1;//throw error message
-			break;
+			// Committer note:
+			// Maybe use a `throw` here? And why is there a break if there's a return?
+			// Does no one review PRs anymore?
+			// break;
 	}
 }
+
+int undoPush(struct node*, char, int);
+int undoPop(struct node*);
+int redoPush(struct node*, char, int);
+int redoPop(struct node*);
 
 //The MAIN method
 int main(int argc, char *argv[])
@@ -270,4 +235,48 @@ int main(int argc, char *argv[])
 	//Write List back into the file
 	writeBackToFile(currNode, argv[1]);
 	return 0;
+}
+
+int undoPush(struct node* currnode, char operation1, int newmoves)
+{
+	undoCursor++;
+	if(undoCursor>MAX_STACK_SIZE-1) return -1;
+	undo_stack[undoCursor].data=currnode->data;
+	undo_stack[undoCursor].operation=operation1;
+	undo_stack[undoCursor].moves=newmoves;
+	return 1;
+}
+
+int undoPop(struct node* currnode)
+{
+	if(undoCursor<0) return -1;
+	evalURnode(&undo_stack[undoCursor], currnode);
+	redoPush(currnode, undo_stack[undoCursor].operation, undo_stack[undoCursor].moves);
+	undo_stack[undoCursor].data = '\0';
+	undo_stack[undoCursor].operation = '\0';
+	undo_stack[undoCursor].moves=0;
+	undoCursor--;
+	return 1;
+}
+
+int redoPush(struct node* currnode, char operation1, int newmoves)
+{
+	redoCursor++;
+	if(redoCursor>MAX_STACK_SIZE-1) return -1;
+	redo_stack[redoCursor].data=currnode->data;
+	redo_stack[redoCursor].operation=operation1;
+	redo_stack[redoCursor].moves=newmoves;
+	return 1;
+}
+
+int redoPop(struct node* currnode)
+{
+	if(redoCursor<0) return -1;
+	evalURnode(&redo_stack[redoCursor],currnode);
+	undoPush(currnode,redo_stack[redoCursor].operation,redo_stack[redoCursor].moves);
+	redo_stack[redoCursor].data = '\0';
+	redo_stack[redoCursor].operation = '\0';
+	redo_stack[redoCursor].moves=0;
+	redoCursor--;
+	return 1;
 }
