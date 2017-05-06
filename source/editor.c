@@ -35,7 +35,8 @@ struct node* getHead(struct node* currNode)
 void displayAll(struct node* currNode)
 {
 	struct node* temp = getHead(currNode);
-	while (temp->next != NULL)
+	//printf("%c",temp->data);
+	while (temp != NULL)
     {
         printf("%c", temp->data);
         temp = temp->next;
@@ -134,19 +135,39 @@ int redoPop(struct node* currnode)
 	redoCursor--;
 	return 1;
 }
-
-//API for inserting a character after a given node
-int insertCharAfter(struct node* currNode, char newData)
+struct node* moveCursor(struct node* currNode, int n)
 {
-	if(currNode == NULL) return -1; //error has occurred
+	struct node* temp = currNode;
+	if(n>0){
+		temp = goRight(temp, n);
+		//undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+	}
+	else{
+		temp = goLeft(temp, n);
+		//undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+	}
+	return temp;
+}
+//API for inserting a character after a given node
+struct node* insertCharAfter(struct node* currNode, char newData)
+{
+	if(currNode->data == '\0'){
+		struct node* newNode = (struct node*) malloc(sizeof(struct node));
+		newNode->data = newData;
+		newNode->prev= NULL;
+		newNode->next= NULL;
+		return newNode;
+	} //head node created
 	struct node* newNode = (struct node*) malloc(sizeof(struct node));
 	newNode->data = newData;
 	newNode->next = currNode->next;
 	currNode->next = newNode;
 	newNode->prev = currNode;
 	if(newNode->next != NULL) newNode->next->prev = newNode;
+	currNode=moveCursor(currNode,1);
+	
 	undoPush(newNode,'I',0); // when a new character is inserted it is pushed onto the undo stack
-	return 1;
+	return currNode;
 }
 
 //API for deleting a character at the current node
@@ -212,54 +233,33 @@ void writeBackToFile(struct node* head_ref, char *filename)
 	head_ref = getHead(head_ref);
 	FILE *file = fopen(filename,"w");
 	if (!file){		printf("File could not be opened. Press any key to continue! \n\a\a");		getchar();		return;	}
-	while(head_ref->next != NULL){
+	while(head_ref != NULL){
 		fputc(head_ref->data, file);
 		head_ref = head_ref->next;
 	}
 	fclose(file);
 }
 //API for cursor handling combining goRight() and goLeft()
-struct node* moveCursor(struct node* currNode, int n)
-{
-	struct node* temp = currNode;
-	if(n>0){
-		temp = goRight(temp, n);
-		undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
-	}
-	else{
-		temp = goLeft(temp, n);
-		undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
-	}
-	return temp;
-}
+
 /*
 	This function evaluates the undoRedoNode that has been popped off the top of the UR stack
 */
 int evalURnode(struct undoRedoNode* undoRedoNode, struct node* currnode)
 {
-	// sees the operation in the undo node and takes action
-	/*
-		1. If the operation in the UR stack is insert then we delete the node at the current location.
-		2. If the operation in the UR stack is delete then we create a new node and insert the node
-		after the current location.
-		3. If the operation is move then we check the number of movements and its sign. Next we move
-		the cursor accordingly in the opposite direction.
-	*/
+
 	char operation1 = undoRedoNode->operation;
 	switch(operation1){
 		case 'I':
 			return deleteChar(currnode); //return 1 for successful deletion and -1 for some error
 		case 'D':
-		    return insertCharAfter(currnode, undoRedoNode->data); //return 1 for successful insertion and -1 for some error
+		    currnode = insertCharAfter(currnode, undoRedoNode->data); //return 1 for successful insertion and -1 for some error
+			return 1;
 		case 'M':
 		    moveCursor(currnode, -1 * (undoRedoNode->moves)); //Move Cursor to a specified position
 			return 1;
 		default: 
 		    return -1;//throw error message
-			// Committer note:
-			// Maybe use a `throw` here? And why is there a break if there's a return?
-			// Does no one review PRs anymore?
-			// break;
+
 	}
 }
 
@@ -269,30 +269,16 @@ int main(int argc, char *argv[])
 {
 	//Load the whole file into a LinkedList and returns the tail pointer
 	struct node* currNode = loadFileToList(argv[1]);
-	insertCharAfter(currNode,'H');currNode = moveCursor(currNode,1);//currNode=currNode->next;
-	insertCharAfter(currNode,'I');currNode = moveCursor(currNode,1);//currNode=currNode->next;
+	
+	currNode = insertCharAfter(currNode,'H');
+
+	//currNode = moveCursor(currNode,1);//currNode=currNode->next;
+	currNode = insertCharAfter(currNode,'I');//currNode = moveCursor(currNode,1);//currNode=currNode->next;
+
+	currNode = insertCharAfter(currNode,'$');
+	deleteChar(currNode);
 	displayAll(currNode);
-	//undoPop(currNode);
-	//displayAll(currNode);
-	//deleteChar(currNode);
-	//printf('\n');
-	//displayAll(currNode);
-	/*while(1){
-		Start the front end program somehow.
-		perform operations on the Linked List by capturing keystrokes on the frontend and mapping them to the suitable APIs
-		provided by the backend.
-		API 1. insertCharAfter(currNode,data), undoPush()
-		API 2. deleteChar(currNode),
-		API 3. moveCursor(currNode, N)
-		API 4. displayAll(currNode) --> display from start to end
-		API 4. displayCurrN(currNode,N) --> displays the Linked List from start to end
-		API 5. undo()
-		API 6. redo()
-	}*/
-	//Write List back into the file
+	
 	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
-
-
-
