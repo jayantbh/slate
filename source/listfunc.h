@@ -9,6 +9,19 @@ struct node{
 	struct node *prev;
 };
 
+struct undoNode{
+	struct node* uNode;
+	char op;
+	int moves;
+};
+
+struct undoNode undo_stack[MAX_STACK_SIZE];
+int undoCursor = -1;
+
+int undoPush(struct node* currNode, char operation, int newmoves);
+struct undoNode undoPop(void);
+struct node* undo(struct node* currNode);
+
 struct node* getHead(struct node* currNode);
 void displayAll(struct node* currNode);
 void displayCurrN(struct node* currNode, int N);
@@ -16,7 +29,7 @@ struct node* goRight(struct node* currNode, int n);
 struct node* goLeft(struct node* currNode, int n);
 struct node* moveCursor(struct node* currNode, int n);
 struct node* insertCharAfter(struct node* currNode, char newData);
-int deleteChar(struct node* currNode);
+struct node* deleteChar(struct node* currNode);
 struct node* loadFileToList(char *filename);
 void writeBackToFile(struct node* head_ref, char *filename);
 
@@ -120,14 +133,15 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 	if(newNode->next != NULL) newNode->next->prev = newNode;
 	currNode=moveCursor(currNode,1);
 	
-	//undoPush(newNode,'I',0); // when a new character is inserted it is pushed onto the undo stack
+	undoPush(newNode,'I',0); // when a new character is inserted it is pushed onto the undo stack
 	return currNode;
 }
 
 //API for deleting a character at the current node
-int deleteChar(struct node* currNode)
+struct node* deleteChar(struct node* currNode)
 {
-	if(currNode == NULL) return -1; //error has occurred
+	//if(currNode == NULL) return -1; //error has occurred
+	struct node* prevNode = currNode->prev;
 	if(currNode->prev!=NULL) 
 		currNode->prev->next = currNode->next;
 	else
@@ -136,9 +150,9 @@ int deleteChar(struct node* currNode)
 		currNode->next->prev = currNode->prev;
 	else
 		currNode->prev->next = NULL;
-	//undoPush(currNode,'D',0); // when a new character is deleted it is pushed onto the undo stack
-	free(currNode);
-	return 1;
+	undoPush(currNode,'D',0); // when a new character is deleted it is pushed onto the undo stack
+	//free(currNode);
+	return prevNode;
 }
 
 /*
@@ -192,4 +206,46 @@ void writeBackToFile(struct node* head_ref, char *filename)
 		head_ref = head_ref->next;
 	}
 	fclose(file);
+}
+
+int undoPush(struct node* currNode, char operation, int newmoves)
+{
+	undoCursor++;
+	if(undoCursor>MAX_STACK_SIZE-1) return -1;
+	undo_stack[undoCursor].uNode=currNode;
+	undo_stack[undoCursor].op=operation;
+	undo_stack[undoCursor].moves=newmoves;
+	return 1;
+}
+
+struct undoNode undoPop(void)
+{
+	//if(undoCursor<0) return NULL;
+	struct undoNode unNode = undo_stack[undoCursor];
+	undoCursor--;
+	return unNode;
+}
+
+struct node* undo(struct node* currNode)
+{
+	struct undoNode unNode = undoPop();
+	//if(unNode == NULL) return -1;
+	char oper = unNode.op;
+	struct node* prevNode;
+	switch(oper){
+		case 'I':
+			prevNode = deleteChar(currNode); //return 1 for successful deletion and -1 for some error
+			return prevNode;
+		case 'D':
+		    printf("\nInserting %c after this character: %c\n",unNode.uNode->data,currNode->data);
+		    currNode = insertCharAfter(currNode, unNode.uNode->data); //return 1 for successful insertion and -1 for some error
+		    printf("%c\n",currNode->data);
+			return currNode;
+		/*case 'M':
+		    moveCursor(*currNode, -1 * (unNode.moves)); //Move Cursor to a specified position
+			return 1;*/
+		default: 
+		    return currNode;//throw error message
+
+	}
 }
