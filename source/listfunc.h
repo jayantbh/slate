@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define MAX_STACK_SIZE 10
+#define MAX_STACK_SIZE 100
 
 struct node{
 	char data;
@@ -17,6 +17,8 @@ struct undoNode{
 
 struct undoNode undo_stack[MAX_STACK_SIZE];
 int undoCursor = -1;
+
+int move = 0;
 
 int undoPush(struct node* currNode, char operation, int newmoves);
 struct undoNode undoPop(void);
@@ -84,6 +86,7 @@ struct node* goRight(struct node* currNode, int n)
 	struct node* temp = currNode;
 	while(temp->next != NULL && n>0){
 		temp = temp->next;
+		//printf("\n*****\n%c, %d\n",temp->data,n);
 		n--;
 	}
 	return temp;
@@ -93,8 +96,9 @@ struct node* goRight(struct node* currNode, int n)
 struct node* goLeft(struct node* currNode, int n)
 {
 	struct node* temp = currNode;
-	if(temp->prev != NULL && n<0){
+	while(temp->prev != NULL && n<0){
 		temp = temp->prev;
+		//printf("\n*****\n%c, %d\n",temp->data,n);
 		n++;
 	}
 	return temp;
@@ -107,11 +111,11 @@ struct node* moveCursor(struct node* currNode, int n)
 	struct node* temp = currNode;
 	if(n>0){
 		temp = goRight(temp, n);
-		//undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+		move+=n;
 	}
 	else{
 		temp = goLeft(temp, n);
-		//undoPush(temp,'M',n); // when a move is made, it is pushed onto the undo stack
+		move+=n;
 	}
 	return temp;
 }
@@ -133,7 +137,8 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 	if(newNode->next != NULL) newNode->next->prev = newNode;
 	currNode=moveCursor(currNode,1);
 	
-	undoPush(newNode,'I',0); // when a new character is inserted it is pushed onto the undo stack
+	undoPush(newNode,'I',move); // when a new character is inserted it is pushed onto the undo stack
+	move = 0;
 	return currNode;
 }
 
@@ -141,7 +146,7 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 struct node* deleteChar(struct node* currNode)
 {
 	//if(currNode == NULL) return -1; //error has occurred
-	struct node* prevNode = currNode->prev;
+	struct node* prevNode = moveCursor(currNode,-1);
 	if(currNode->prev!=NULL) 
 		currNode->prev->next = currNode->next;
 	else
@@ -150,8 +155,9 @@ struct node* deleteChar(struct node* currNode)
 		currNode->next->prev = currNode->prev;
 	else
 		currNode->prev->next = NULL;
-	undoPush(currNode,'D',0); // when a new character is deleted it is pushed onto the undo stack
+	undoPush(currNode,'D',move); // when a new character is deleted it is pushed onto the undo stack
 	//free(currNode);
+	move = 0;
 	return prevNode;
 }
 
@@ -228,22 +234,37 @@ struct undoNode undoPop(void)
 
 struct node* undo(struct node* currNode)
 {
+    //printf("Cursor: %d\n",undoCursor);
 	struct undoNode unNode = undoPop();
+	//printf("Cursor: %d\n",undoCursor);
 	//if(unNode == NULL) return -1;
 	char oper = unNode.op;
 	struct node* prevNode;
+	//printf("%d\n",move);
 	switch(oper){
 		case 'I':
-			prevNode = deleteChar(currNode); //return 1 for successful deletion and -1 for some error
+			 //return 1 for successful deletion and -1 for some error
+			
+			//printf("Deleting after making %d moves\n",move);
+			move = -1 * unNode.moves;
+			printf("Deleting after making %d moves\n",move);
+			prevNode = moveCursor(prevNode,move);
+			prevNode = deleteChar(currNode);
+			undoPop();
 			return prevNode;
 		case 'D':
-		    printf("\nInserting %c after this character: %c\n",unNode.uNode->data,currNode->data);
-		    currNode = insertCharAfter(currNode, unNode.uNode->data); //return 1 for successful insertion and -1 for some error
+		     //return 1 for successful insertion and -1 for some error
+		    
+		    
+		    //printf("Inserting after making %d moves\n",move);
+			move = -1 * unNode.moves;
+			printf("Inserting after making %d moves\n",move);
+			currNode = moveCursor(currNode,move);
+			printf("Inserting %c after this character: %c\n",unNode.uNode->data,currNode->data);
+		    currNode = insertCharAfter(currNode, unNode.uNode->data);
+		    undoPop();
 		    printf("%c\n",currNode->data);
 			return currNode;
-		/*case 'M':
-		    moveCursor(*currNode, -1 * (unNode.moves)); //Move Cursor to a specified position
-			return 1;*/
 		default: 
 		    return currNode;//throw error message
 
