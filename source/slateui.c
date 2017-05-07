@@ -14,9 +14,10 @@
 
 //#include <curses.h>
 #include <ncurses.h>
-#include <panel.h>
+//#include <panel.h>
 #include <signal.h>
 #include <stdlib.h>
+#include "listfunc.h"
 
 int HEIGHT, WIDTH;
 WINDOW *title_bar, *editor, *menu;
