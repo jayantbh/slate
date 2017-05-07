@@ -18,7 +18,7 @@ struct undoNode{
 struct undoNode undo_stack[MAX_STACK_SIZE];
 int undoCursor = -1;
 
-int move = 0;
+int move_cur = 0;
 
 int undoPush(struct node* currNode, char operation, int newmoves);
 struct undoNode undoPop(void);
@@ -111,11 +111,11 @@ struct node* moveCursor(struct node* currNode, int n)
 	struct node* temp = currNode;
 	if(n>0){
 		temp = goRight(temp, n);
-		move+=n;
+		move_cur+=n;
 	}
 	else{
 		temp = goLeft(temp, n);
-		move+=n;
+		move_cur+=n;
 	}
 	return temp;
 }
@@ -137,8 +137,8 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 	if(newNode->next != NULL) newNode->next->prev = newNode;
 	currNode=moveCursor(currNode,1);
 	
-	undoPush(newNode,'I',move); // when a new character is inserted it is pushed onto the undo stack
-	move = 0;
+	undoPush(newNode,'I',move_cur); // when a new character is inserted it is pushed onto the undo stack
+	move_cur = 0;
 	return currNode;
 }
 
@@ -155,9 +155,9 @@ struct node* deleteChar(struct node* currNode)
 		currNode->next->prev = currNode->prev;
 	else
 		currNode->prev->next = NULL;
-	undoPush(currNode,'D',move); // when a new character is deleted it is pushed onto the undo stack
+	undoPush(currNode,'D',move_cur); // when a new character is deleted it is pushed onto the undo stack
 	//free(currNode);
-	move = 0;
+	move_cur = 0;
 	return prevNode;
 }
 
@@ -246,9 +246,9 @@ struct node* undo(struct node* currNode)
 			 //return 1 for successful deletion and -1 for some error
 			
 			//printf("Deleting after making %d moves\n",move);
-			move = -1 * unNode.moves;
-			printf("Deleting after making %d moves\n",move);
-			prevNode = moveCursor(prevNode,move);
+			move_cur = -1 * unNode.moves;
+			printf("Deleting after making %d moves\n",move_cur);
+			prevNode = moveCursor(prevNode,move_cur);
 			prevNode = deleteChar(currNode);
 			undoPop();
 			return prevNode;
@@ -257,9 +257,9 @@ struct node* undo(struct node* currNode)
 		    
 		    
 		    //printf("Inserting after making %d moves\n",move);
-			move = -1 * unNode.moves;
-			printf("Inserting after making %d moves\n",move);
-			currNode = moveCursor(currNode,move);
+			move_cur = -1 * unNode.moves;
+			printf("Inserting after making %d moves\n",move_cur);
+			currNode = moveCursor(currNode,move_cur);
 			printf("Inserting %c after this character: %c\n",unNode.uNode->data,currNode->data);
 		    currNode = insertCharAfter(currNode, unNode.uNode->data);
 		    undoPop();
