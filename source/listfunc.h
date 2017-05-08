@@ -25,6 +25,7 @@ int calculateMoves(struct node* currNode,struct node* nextNode);
 struct node* getHead(struct node* currNode);
 void displayAll(struct node* currNode);
 void displayCurrN(struct node* currNode, int N);
+char * getFileContents(struct node* currNode);
 struct node* goRight(struct node* currNode, int n);
 struct node* goLeft(struct node* currNode, int n);
 struct node* moveCursor(struct node* currNode, int n);
@@ -78,11 +79,12 @@ void displayAll(struct node* currNode)
 {
 	struct node* temp = getHead(currNode);
 	//printf("%c",temp->data);
-	while (temp != NULL)
-    {
-        printf("%c", temp->data);
-        temp = temp->next;
-    }
+//	while (temp != NULL)
+//    {
+//        printf("%c", temp->data);
+//        temp = temp->next;
+//    }
+	printf("%s", getFileContents(currNode));
     return;
 }
 
@@ -257,6 +259,19 @@ struct node* loadFileToList(char *filename)
 	}
 	printf("\nFile Loaded!\n");
 	return getHead(head);
+}
+
+char * getFileContents(struct node* currNode) {
+	struct node* temp = getHead(currNode);
+	char * list = malloc(100000); char ch;
+	int i = 0;
+	while (temp != NULL)
+	{
+		list[i] = temp->data;
+		temp = temp->next;
+		i++;
+	}
+	return list;
 }
 
 //write the linked list back into the file
