@@ -1,6 +1,7 @@
-                                                                                                                                                                              #include <stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #define MAX_STACK_SIZE 100
 
 struct node{
@@ -17,10 +18,10 @@ struct undoNode{
 struct undoNode undo_stack[MAX_STACK_SIZE];
 int undoCursor = -1;
 
-int undoPush(struct node* currNode, char operation);
-struct undoNode undoPop(void);
-int undo(struct node** currNode);
+int positionArray[100];
+int indexOfPos = 0;
 
+int calculateMoves(struct node* currNode,struct node* nextNode);
 struct node* getHead(struct node* currNode);
 void displayAll(struct node* currNode);
 void displayCurrN(struct node* currNode, int N);
@@ -32,8 +33,15 @@ struct node* insertCharBefore(struct node* currNode, char newData);
 struct node* deleteChar(struct node* currNode);
 struct node* loadFileToList(char *filename);
 void writeBackToFile(struct node* head_ref, char *filename);
-int calculateMoves(struct node* currNode,struct node* nextNode);
 
+int undoPush(struct node* currNode, char operation);
+struct undoNode undoPop(void);
+int undo(struct node** currNode);
+
+void initializePositionArray(void);
+void KMPSearch(char *pat, char *txt);
+void computeLPSArray(char *pat, int M, int *lps);
+char* convertToString(struct node* currNode);
 
 int calculateMoves(struct node* currNode,struct node* nextNode){
 	int movesLeft = 0,movesRight = 0;
@@ -306,4 +314,94 @@ int undo(struct node** currNode)
 		    return move;//throw error message
 
 	}
+}
+
+void initializePositionArray()
+{
+    for(indexOfPos = 0;indexOfPos<100;indexOfPos++){
+        positionArray[indexOfPos]=-1;
+    }
+    indexOfPos = 0;
+}
+// Finds occurrences of txt[] in pat[] and stores the indices in positionArray
+void KMPSearch(char *pat, char *txt)
+{
+    int M = strlen(pat);
+    int N = strlen(txt);
+    int lps[M];
+    computeLPSArray(pat, M, lps);
+     int i = 0;  // index for txt[]
+    int j  = 0;  // index for pat[]
+    while (i < N)
+    {
+        if (pat[j] == txt[i])
+        {
+            j++;
+            i++;
+        }
+        if (j == M)
+        {
+            positionArray[indexOfPos]=(i-j);
+            indexOfPos++;
+            j = lps[j-1];
+        }
+        // mismatch after j matches
+        else if (i < N && pat[j] != txt[i])
+        {
+            if (j != 0)
+                j = lps[j-1];
+            else
+                i = i+1;
+        }
+    }
+}
+ 
+// Fills lps[] for given patttern pat[0..M-1]
+void computeLPSArray(char *pat, int M, int *lps)
+{
+    // length of the previous longest prefix suffix
+    int len = 0;
+    lps[0] = 0; // lps[0] is always 0
+    // the loop calculates lps[i] for i = 1 to M-1
+    int i = 1;
+    while (i < M)
+    {
+        if (pat[i] == pat[len])
+        {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+        else // (pat[i] != pat[len])
+        {
+            if (len != 0)
+                len = lps[len-1];
+            else // if (len == 0)
+            {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+}
+
+char* convertToString(struct node* currNode)
+{
+	char* text = malloc(100000);
+	struct node* head = getHead(currNode);
+	int n = 0;
+	while(head->next!=NULL){
+		text[n++] = head->data;
+		head = head->next;
+	}
+	//text[n]='\0';
+	return text;
+}
+
+void find(char* pattern,struct node* currNode)
+{
+	char* text = convertToString(currNode);
+	printf("\n%s\n",text);
+	initializePositionArray();
+	KMPSearch(pattern,text);
 }
