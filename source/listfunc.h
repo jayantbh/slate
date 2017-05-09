@@ -173,12 +173,16 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 struct node* insertCharBefore(struct node* currNode, char newData)
 {
 	// If Linked list is empty then create a new node and return this as current node
-	if(currNode->data == '\0'){
+	if(currNode->data == NULL){
 		struct node* newNode = (struct node*) malloc(sizeof(struct node));
+		struct node* nextNode = (struct node*) malloc(sizeof(struct node));
 		newNode->data = newData;
-		newNode->prev= NULL;
-		newNode->next= NULL;
-		return newNode;
+		newNode->prev = NULL;
+		newNode->next = nextNode;
+		nextNode->prev = newNode;
+		nextNode->next = NULL;
+		nextNode->data = NULL;
+		return nextNode;
 	}
 
 	//anywhere else
@@ -196,7 +200,7 @@ struct node* insertCharBefore(struct node* currNode, char newData)
 	currNode=newNode;
 	
 	undoPush(newNode,'I'); // when a new character is inserted it is pushed onto the undo stack
-	return currNode;
+	return currNode->next;
 }
 
 //API for deleting a character at the current node
