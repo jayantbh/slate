@@ -1,4 +1,4 @@
-#include <stdio.h>
+                                                                                                                                                                              #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #define MAX_STACK_SIZE 100
@@ -12,17 +12,14 @@ struct node{
 struct undoNode{
 	struct node* uNode;
 	char op;
-	int moves;
 };
 
 struct undoNode undo_stack[MAX_STACK_SIZE];
 int undoCursor = -1;
 
-int move_cur = 0;
-
-int undoPush(struct node* currNode, char operation, int newmoves);
+int undoPush(struct node* currNode, char operation);
 struct undoNode undoPop(void);
-struct node* undo(struct node* currNode);
+int undo(struct node** currNode);
 
 struct node* getHead(struct node* currNode);
 void displayAll(struct node* currNode);
@@ -31,9 +28,32 @@ struct node* goRight(struct node* currNode, int n);
 struct node* goLeft(struct node* currNode, int n);
 struct node* moveCursor(struct node* currNode, int n);
 struct node* insertCharAfter(struct node* currNode, char newData);
+struct node* insertCharBefore(struct node* currNode, char newData);
 struct node* deleteChar(struct node* currNode);
 struct node* loadFileToList(char *filename);
 void writeBackToFile(struct node* head_ref, char *filename);
+int calculateMoves(struct node* currNode,struct node* nextNode);
+
+
+int calculateMoves(struct node* currNode,struct node* nextNode){
+	int movesLeft = 0,movesRight = 0;
+	struct node *tempLeft = currNode,*tempRight = currNode;
+	while(1){
+		if(tempLeft!=NULL){
+			tempLeft = tempLeft->prev;
+			movesLeft--;
+			if(tempLeft == nextNode)
+				return movesLeft;
+		}
+		if(tempRight!=NULL){
+			tempRight = tempRight->next;
+			movesRight++;
+			if(tempRight == nextNode)
+				return movesRight;
+		}
+	}
+	
+}
 
 // return the head of the LinkedList
 struct node* getHead(struct node* currNode)
@@ -111,11 +131,9 @@ struct node* moveCursor(struct node* currNode, int n)
 	struct node* temp = currNode;
 	if(n>0){
 		temp = goRight(temp, n);
-		move_cur+=n;
 	}
 	else{
 		temp = goLeft(temp, n);
-		move_cur+=n;
 	}
 	return temp;
 }
@@ -135,10 +153,39 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 	currNode->next = newNode;
 	newNode->prev = currNode;
 	if(newNode->next != NULL) newNode->next->prev = newNode;
-	currNode=moveCursor(currNode,1);
+	currNode=newNode;
 	
-	undoPush(newNode,'I',move_cur); // when a new character is inserted it is pushed onto the undo stack
-	move_cur = 0;
+	undoPush(newNode,'I'); // when a new character is inserted it is pushed onto the undo stack
+	return currNode;
+}
+
+//API for inserting a character before a given node
+struct node* insertCharBefore(struct node* currNode, char newData)
+{
+	// If Linked list is empty then create a new node and return this as current node
+	if(currNode->data == '\0'){
+		struct node* newNode = (struct node*) malloc(sizeof(struct node));
+		newNode->data = newData;
+		newNode->prev= NULL;
+		newNode->next= NULL;
+		return newNode;
+	}
+
+	//anywhere else
+	struct node* newNode = (struct node*) malloc(sizeof(struct node));
+	newNode->data = newData;
+	if(currNode->prev!=NULL){
+		newNode->prev = currNode->prev;
+		currNode->prev->next = newNode;
+	}
+	else 
+		newNode->prev = NULL;
+	newNode->next = currNode;
+	currNode->prev = newNode;
+
+	currNode=newNode;
+	
+	undoPush(newNode,'I'); // when a new character is inserted it is pushed onto the undo stack
 	return currNode;
 }
 
@@ -155,9 +202,8 @@ struct node* deleteChar(struct node* currNode)
 		currNode->next->prev = currNode->prev;
 	else
 		currNode->prev->next = NULL;
-	undoPush(currNode,'D',move_cur); // when a new character is deleted it is pushed onto the undo stack
+	undoPush(currNode,'D'); // when a new character is deleted it is pushed onto the undo stack
 	//free(currNode);
-	move_cur = 0;
 	return prevNode;
 }
 
@@ -168,6 +214,10 @@ struct node* deleteChar(struct node* currNode)
 */
 struct node* loadFileToList(char *filename)
 {
+	if(filename == NULL){
+		printf("Enter a valid filename!\n");
+		exit(0);
+	}
 	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node* memory1;
 	head->prev = head->next = NULL;
 	char* list = malloc(100000); char ch;
@@ -214,13 +264,12 @@ void writeBackToFile(struct node* head_ref, char *filename)
 	fclose(file);
 }
 
-int undoPush(struct node* currNode, char operation, int newmoves)
+int undoPush(struct node* currNode, char operation)
 {
 	undoCursor++;
 	if(undoCursor>MAX_STACK_SIZE-1) return -1;
 	undo_stack[undoCursor].uNode=currNode;
 	undo_stack[undoCursor].op=operation;
-	undo_stack[undoCursor].moves=newmoves;
 	return 1;
 }
 
@@ -232,41 +281,29 @@ struct undoNode undoPop(void)
 	return unNode;
 }
 
-struct node* undo(struct node* currNode)
+int undo(struct node** currNode)
 {
-    //printf("Cursor: %d\n",undoCursor);
 	struct undoNode unNode = undoPop();
-	//printf("Cursor: %d\n",undoCursor);
 	//if(unNode == NULL) return -1;
 	char oper = unNode.op;
-	struct node* prevNode;
-	//printf("%d\n",move);
+	struct node* nextNode;
+	int move=0;
 	switch(oper){
 		case 'I':
-			 //return 1 for successful deletion and -1 for some error
-			
-			//printf("Deleting after making %d moves\n",move);
-			move_cur = -1 * unNode.moves;
-			printf("Deleting after making %d moves\n",move_cur);
-			prevNode = moveCursor(prevNode,move_cur);
-			prevNode = deleteChar(currNode);
+			nextNode = deleteChar(unNode.uNode); //return 1 for successful deletion and -1 for some error
+			move = calculateMoves(*currNode,nextNode);
+			*currNode = nextNode;
 			undoPop();
-			return prevNode;
+			return move;
 		case 'D':
-		     //return 1 for successful insertion and -1 for some error
-		    
-		    
-		    //printf("Inserting after making %d moves\n",move);
-			move_cur = -1 * unNode.moves;
-			printf("Inserting after making %d moves\n",move_cur);
-			currNode = moveCursor(currNode,move_cur);
-			printf("Inserting %c after this character: %c\n",unNode.uNode->data,currNode->data);
-		    currNode = insertCharAfter(currNode, unNode.uNode->data);
+		    printf("Inserting %c after this character: %c\n",unNode.uNode->data,unNode.uNode->prev->data);
+		    nextNode = insertCharAfter(unNode.uNode->prev, unNode.uNode->data); //return 1 for successful insertion and -1 for some error
+			move = calculateMoves(*currNode,nextNode);
+			*currNode = nextNode;
 		    undoPop();
-		    printf("%c\n",currNode->data);
-			return currNode;
+			return move;
 		default: 
-		    return currNode;//throw error message
+		    return move;//throw error message
 
 	}
 }
