@@ -11,6 +11,10 @@ int main(int argc, char *argv[])
 	currNode = insertCharAfter(currNode,'A');
     displayAll(currNode);
 	printf("\n");
+	currNode = insertCharBefore(currNode,'S');
+	displayAll(currNode);
+	currNode = moveCursor(currNode,1);
+	printf("\n");
 	currNode = insertCharAfter(currNode,'B');
     displayAll(currNode);
 	printf("\n");
@@ -38,6 +42,21 @@ int main(int argc, char *argv[])
     currNode = insertCharAfter(currNode,'Y');
 	displayAll(currNode);
 	printf("\n");
+	printf("No Of Moves = %d\n",undo(&currNode));
+	displayAll(currNode);
+	printf("\n");
+	printf("\nNo Of Moves = %d\n",undo(&currNode));
+	displayAll(currNode);
+	printf("\n");
+	printf("\nNo Of Moves = %d\n",undo(&currNode));
+	displayAll(currNode);
+	printf("\n");
+	currNode = insertCharBefore(currNode,'T');
+	displayAll(currNode);
+	printf("\n");
+	printf("No Of Moves = %d\n",undo(&currNode));
+	displayAll(currNode);
+	printf("\n %c\n",currNode->data);
 	/*
     currNode = undo(currNode);
 	move = 0;
@@ -56,6 +75,7 @@ int main(int argc, char *argv[])
 	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
+
 
 
 
