@@ -209,7 +209,7 @@ void keystroke_handler() {
                 break;
             case 10:    //ENTER
 //                waddch(editor, (char) ch);
-                NODE = insertCharAfter(NODE, (char) ch);
+                NODE = insertCharBefore(NODE, (char) ch);
                 mvwprintw(editor, 0, 0, getFileContents(NODE));
                 getyx(editor, y, x);
                 x=0;
@@ -226,7 +226,7 @@ void keystroke_handler() {
                 }
                 x += increment;
 //                waddch(editor, (char) ch);
-                NODE = insertCharAfter(NODE, (char) ch);
+                NODE = insertCharBefore(NODE, (char) ch);
                 mvwprintw(editor, 0, 0, getFileContents(NODE));
                 wmove(editor, y, x);
         }
