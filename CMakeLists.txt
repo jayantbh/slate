@@ -16,3 +16,8 @@ add_executable(backend.out ${SOURCE_BACKEND})
 find_package( Curses REQUIRED )
 include_directories( ${CURSES_INCLUDE_DIRS} )
 target_link_libraries( slate.out ${CURSES_LIBRARIES} )
+
+enable_testing()
+
+add_test( backend_run backend.out test_backend.txt )
+add_test( slate_compile make )
