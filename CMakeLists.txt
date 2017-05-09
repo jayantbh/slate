@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 2.5.1)
 project(slate)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -lpanel -lncurses -std=c99")
@@ -20,4 +20,3 @@ target_link_libraries( slate.out ${CURSES_LIBRARIES} )
 enable_testing()
 
 add_test( backend_run backend.out test_backend.txt )
-add_test( slate_compile make )
