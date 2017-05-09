@@ -11,6 +11,10 @@ int main(int argc, char *argv[])
 	currNode = insertCharAfter(currNode,'A');
     displayAll(currNode);
 	printf("\n");
+	currNode = insertCharBefore(currNode,'S');
+	displayAll(currNode);
+	currNode = moveCursor(currNode,1);
+	printf("\n");
 	currNode = insertCharAfter(currNode,'B');
     displayAll(currNode);
 	printf("\n");
@@ -38,24 +42,28 @@ int main(int argc, char *argv[])
     currNode = insertCharAfter(currNode,'Y');
 	displayAll(currNode);
 	printf("\n");
-	/*
-    currNode = undo(currNode);
-	move = 0;
-    displayAll(currNode);
-	printf("\n");
-	currNode = insertCharAfter(currNode,'$');
+	printf("No Of Moves = %d\n",undo(&currNode));
 	displayAll(currNode);
 	printf("\n");
-	currNode = deleteChar(currNode);
+	printf("\nNo Of Moves = %d\n",undo(&currNode));
 	displayAll(currNode);
 	printf("\n");
-	currNode = undo(currNode);
-	move = 0;
+	printf("\nNo Of Moves = %d\n",undo(&currNode));
 	displayAll(currNode);
-	printf("\n");*/
+	printf("\n");
+	currNode = insertCharBefore(currNode,'T');
+	displayAll(currNode);
+	printf("\n");
+	printf("No Of Moves = %d\n",undo(&currNode));
+	displayAll(currNode);
+	printf("\n %c\n",currNode->data);
+	find("BC",currNode);
+	int i=0;
+	for(;positionArray[i]!=-1; i++){
+		printf("%d\t",positionArray[i]);
+	}
+	printf("\n");
+	
 	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
-
-
-
