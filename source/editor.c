@@ -57,25 +57,13 @@ int main(int argc, char *argv[])
 	printf("No Of Moves = %d\n",undo(&currNode));
 	displayAll(currNode);
 	printf("\n %c\n",currNode->data);
-	/*
-    currNode = undo(currNode);
-	move = 0;
-    displayAll(currNode);
+	find("BC",currNode);
+	int i=0;
+	for(;positionArray[i]!=-1; i++){
+		printf("%d\t",positionArray[i]);
+	}
 	printf("\n");
-	currNode = insertCharAfter(currNode,'$');
-	displayAll(currNode);
-	printf("\n");
-	currNode = deleteChar(currNode);
-	displayAll(currNode);
-	printf("\n");
-	currNode = undo(currNode);
-	move = 0;
-	displayAll(currNode);
-	printf("\n");*/
+	
 	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
-
-
-
-
