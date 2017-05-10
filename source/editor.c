@@ -63,7 +63,12 @@ int main(int argc, char *argv[])
 		printf("%d\t",positionArray[i]);
 	}
 	printf("\n");
-	
+	findAndReplace("BC","XXX",currNode);
+	displayAll(currNode);
+	printf("\n");
+	findAndReplace("XXX","BC",currNode);
+	displayAll(currNode);
+	printf("\n");
 	writeBackToFile(currNode, argv[1]);
 	return 0;
 }
