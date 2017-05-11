@@ -21,6 +21,7 @@ int undoCursor = -1;
 int positionArray[100];
 int indexOfPos = 0;
 
+
 int calculateMoves(struct node* currNode,struct node* nextNode);
 struct node* getHead(struct node* currNode);
 void displayAll(struct node* currNode);
@@ -42,6 +43,9 @@ void initializePositionArray(void);
 void KMPSearch(char *pat, char *txt);
 void computeLPSArray(char *pat, int M, int *lps);
 char* convertToString(struct node* currNode);
+void find(char* pattern,struct node* currNode);
+void findAndReplace(char* pattern,char* replace,struct node* currNode);
+void findAndReplaceAll(char* pattern,char* replace,struct node* currNode);
 
 int calculateMoves(struct node* currNode,struct node* nextNode){
 	int movesLeft = 0,movesRight = 0;
@@ -148,13 +152,6 @@ struct node* moveCursor(struct node* currNode, int n)
 //API for inserting a character after a given node
 struct node* insertCharAfter(struct node* currNode, char newData)
 {
-	if(currNode->data == '\0'){
-		struct node* newNode = (struct node*) malloc(sizeof(struct node));
-		newNode->data = newData;
-		newNode->prev= NULL;
-		newNode->next= NULL;
-		return newNode;
-	} //head node created
 	struct node* newNode = (struct node*) malloc(sizeof(struct node));
 	newNode->data = newData;
 	newNode->next = currNode->next;
@@ -226,8 +223,10 @@ struct node* loadFileToList(char *filename)
 		printf("Enter a valid filename!\n");
 		exit(0);
 	}
-	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node* memory1;
+	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node *memory1,*currNode;
 	head->prev = head->next = NULL;
+	head->data = '\r';
+	currNode = head;
 	char* list = malloc(100000); char ch;
 	int n = 0, i=0;
 	FILE *file;
@@ -245,15 +244,9 @@ struct node* loadFileToList(char *filename)
 	}
 	fclose(file);
 	list[n] = '\0';
-	head->data = list[0];
 	while(list[i]!='\0'){
-		i++;
-		memory1 = (struct node*)malloc(sizeof(struct node));
-   		memory1->data = list[i];
-   		memory1->prev = head;
-   		memory1->next = NULL;
-   		head->next = memory1;
-	   	head = memory1;
+		currNode = insertCharAfter(currNode,list[i]);
+	   	i++;
 	}
 	printf("\nFile Loaded!\n");
 	return getHead(head);
@@ -263,6 +256,7 @@ struct node* loadFileToList(char *filename)
 void writeBackToFile(struct node* head_ref, char *filename)
 {
 	head_ref = getHead(head_ref);
+	head_ref = head_ref->next;
 	FILE *file = fopen(filename,"w");
 	if (!file){		printf("File could not be opened. Press any key to continue! \n\a\a");		getchar();		return;	}
 	while(head_ref != NULL){
@@ -404,4 +398,103 @@ void find(char* pattern,struct node* currNode)
 	printf("\n%s\n",text);
 	initializePositionArray();
 	KMPSearch(pattern,text);
+}
+void findAndReplace(char* pattern,char* replace,struct node* currNode)
+{
+	find(pattern,currNode);
+	int h=0;
+	int lengthOfPos = 0;
+	for(;positionArray[h]!=-1;h++) lengthOfPos++;
+	int index = 0;
+	struct node* temp = getHead(currNode);
+	int i=0,pos=positionArray[0];
+	int j = pos;
+	int patternLength = strlen(pattern);
+	int replaceLength = strlen(replace);
+	
+	while(j-->0){
+		temp=temp->next;
+	}
+	struct node* begin = temp;
+	//printf("\n%c\n",begin->data);
+	int ptr1 = patternLength-1;
+	while(ptr1-->0){
+		begin = begin->next;
+	}
+
+	ptr1 = patternLength;
+	while(ptr1-->0){
+		begin = deleteChar(begin);
+	}
+    //printf("\n%c\n",begin->data);
+	ptr1 = replaceLength;
+	for(i = 0;i < ptr1;i++){
+		begin = insertCharAfter(begin,replace[i]);
+	}
+	index++;
+}
+void findAndReplaceAll(char* pattern,char* replace,struct node* currNode)
+{
+	find(pattern,currNode);
+	int h=0;
+	int lengthOfPos = 0;
+	for(;positionArray[h]!=-1;h++) lengthOfPos++;
+	int index = 0;
+	struct node* temp = getHead(currNode);
+	int i=0,pos=positionArray[0];
+	int j = pos;
+	int patternLength = strlen(pattern);
+	int replaceLength = strlen(replace);
+	
+	while(j-->0){
+		temp=temp->next;
+	}
+	struct node* begin = temp;
+	//printf("\n%c\n",begin->data);
+	int ptr1 = patternLength-1;
+	while(ptr1-->0){
+		begin = begin->next;
+	}
+
+	ptr1 = patternLength;
+	while(ptr1-->0){
+		begin = deleteChar(begin);
+	}
+    //printf("\n%c\n",begin->data);
+	ptr1 = replaceLength;
+	for(i = 0;i < ptr1;i++){
+		begin = insertCharAfter(begin,replace[i]);
+	}
+	index++;
+	while(index<lengthOfPos){
+	    find(pattern,currNode);
+	    int h=0;
+	    for(;positionArray[h]!=-1;h++) printf("%d\n",positionArray[h]);
+	    
+		temp = getHead(currNode);
+		i=0,pos=positionArray[0];
+		j = pos;
+		
+		while(j-->0){
+			temp=temp->next;
+		}
+		begin = temp;
+		//printf("\n%c\n",begin->data);
+		ptr1 = patternLength-1;
+		while(ptr1-->0){
+			begin = begin->next;
+		}
+
+		ptr1 = patternLength;
+		while(ptr1-->0){
+			begin = deleteChar(begin);
+		}
+    	//printf("\n%c\n",begin->data);
+		ptr1 = replaceLength;
+		for(i = 0;i < ptr1;i++){
+			begin = insertCharAfter(begin,replace[i]);
+		}
+		index++;
+	}
+
 }
