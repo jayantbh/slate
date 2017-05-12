@@ -25,6 +25,7 @@ int HEIGHT, WIDTH;
 WINDOW *title_bar, *editor, *menu;
 char *filename;
 struct node* NODE;
+int TAB_WIDTH = 4;
 
 /**
  * Signal Handlers
@@ -59,6 +60,20 @@ int line_length(int y){
         i--;
     }
     return i;
+}
+
+int distance_from_char_to_cursor(int y, int x) {
+    char str[400] = {'\0'};
+    mvwinnstr(editor, y, 0, &str, x - 1);
+    int i = (int) (strlen(str) - 1), distance = 1;
+    while(i) {
+        if (str[i] != ' ') {
+            break;
+        }
+        distance++;
+        i--;
+    }
+    return distance;
 }
 
 int special_key(){
@@ -124,6 +139,7 @@ void init_curses_config() {
     initscr();
     cbreak();
     noecho();
+    set_tabsize(TAB_WIDTH);
     refresh();      // Important to refresh screen before refresh window
 
     HEIGHT = LINES;
@@ -168,10 +184,7 @@ void keystroke_handler() {
                         wmove(editor, y, x);
                         break;
                     case KEY_RIGHT:
-                        if (x + 1 > line_length(y)) {
-                            x = line_length(y);
-                        }
-                        else {
+                        if (x < line_length(y) + 1) {
                             x++;
                             NODE = moveCursor(NODE, 1);
                         }
@@ -181,13 +194,16 @@ void keystroke_handler() {
                         break;
                 }
                 break;
-            case 23: // ALT + S
+            case 23:    // ALT + S
                 writeBackToFile(NODE, filename);
                 break;
             case 127:   //BACKSPACE
                 switch ((int) NODE->data) {
-                    case 9: decrement = 8; break;   // TAB
+                    case 9: decrement = distance_from_char_to_cursor(y, x); break;   // TAB
                     default: decrement = 1;
+                }
+                if (x == 0 && y == 0) {
+                    break;
                 }
                 if(x == 0){
                     y--;
@@ -195,9 +211,12 @@ void keystroke_handler() {
                         y=0;
                     }
 
-                    x = line_length(y)+1;
+                    x = line_length(y) + 1;
+                    wmove(editor, y, x);
+                    wdelch(editor);
+                    NODE = deleteChar(NODE);
                 }
-                if(y > 0 || x > 0){
+                else if(x > 0){
                     x -= decrement;
                     if(x < 0){
                         x=0;
@@ -208,8 +227,8 @@ void keystroke_handler() {
                 }
                 break;
             case 10:    //ENTER
-//                waddch(editor, (char) ch);
-                NODE = insertCharBefore(NODE, (char) ch);
+                //waddch(editor, (char) ch);
+                NODE = insertCharAfter(NODE, (char) ch);
                 mvwprintw(editor, 0, 0, getFileContents(NODE));
                 getyx(editor, y, x);
                 x=0;
@@ -217,7 +236,7 @@ void keystroke_handler() {
                 break;
             default:
                 switch (ch) {
-                    case 9: increment = 8; break;   // TAB
+                    case 9: increment = TAB_WIDTH - x % TAB_WIDTH; break;   // TAB
                     default: increment = 1;
                 }
                 if(x + increment > WIDTH-1){
@@ -225,8 +244,8 @@ void keystroke_handler() {
                     x=0;
                 }
                 x += increment;
-//                waddch(editor, (char) ch);
-                NODE = insertCharBefore(NODE, (char) ch);
+                //waddch(editor, (char) ch);
+                NODE = insertCharAfter(NODE, (char) ch);
                 mvwprintw(editor, 0, 0, getFileContents(NODE));
                 wmove(editor, y, x);
         }
