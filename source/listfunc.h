@@ -31,6 +31,7 @@ struct node* goLeft(struct node* currNode, int n);
 struct node* moveCursor(struct node* currNode, int n);
 struct node* insertCharAfter(struct node* currNode, char newData);
 struct node* insertCharBefore(struct node* currNode, char newData);
+char * getFileContents(struct node* currNode);
 struct node* deleteChar(struct node* currNode);
 struct node* loadFileToList(char *filename);
 void writeBackToFile(struct node* head_ref, char *filename);
@@ -264,6 +265,19 @@ void writeBackToFile(struct node* head_ref, char *filename)
 		head_ref = head_ref->next;
 	}
 	fclose(file);
+}
+
+char * getFileContents(struct node* currNode) {
+    struct node* temp = getHead(currNode);
+    char * list = malloc(100000); char ch;
+    int i = 0;
+    while (temp != NULL)
+    {
+        list[i] = temp->data;
+        temp = temp->next;
+        i++;
+    }
+    return list;
 }
 
 int undoPush(struct node* currNode, char operation)
