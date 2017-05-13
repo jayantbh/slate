@@ -46,6 +46,8 @@ char* convertToString(struct node* currNode);
 void find(char* pattern,struct node* currNode);
 void findAndReplace(char* pattern,char* replace,struct node* currNode);
 void findAndReplaceAll(char* pattern,char* replace,struct node* currNode);
+struct node* copy(struct node* currNode,int startPositionSource,int startPositionDestination,int length);
+struct node* cut(struct node* currNode,int startPositionSource,int startPositionDestination,int length);
 
 int calculateMoves(struct node* currNode,struct node* nextNode){
 	int movesLeft = 0,movesRight = 0;
@@ -81,6 +83,7 @@ struct node* getHead(struct node* currNode)
 void displayAll(struct node* currNode)
 {
 	struct node* temp = getHead(currNode);
+	temp = temp->next;
 	//printf("%c",temp->data);
 	while (temp != NULL)
     {
@@ -498,3 +501,58 @@ void findAndReplaceAll(char* pattern,char* replace,struct node* currNode)
 	}
 
 }
+/*
+    Suppose you have a file containing 12345. Each character corresponds to its index in the file.
+    If you want an output 123451 you call copy(1,6,1) since you want to insert 1 at the 6th position.
+    If you want an output 512345 you call copy(5,1,1) since you want to insert 5 at the 1st position.
+    If you want an output 12345234 you call copy(2,6,3) since you want to insert 2,3,4 at the 6th position, ie the end.
+    
+    If you want an output 23451 you call cut(1,6,1) since you want to insert 1 at the 6th position.
+    If you want an output 51234 you call cut(5,1,1) since you want to insert 5 at the 1st position.
+    If you want an output 15234 you call cut(2,6,3) since you want to insert 2,3,4 at the 6th position, ie the end.
+    
+    Basically to copy or cut to the last position, you have to use length_of_file + 1 as startPositionDestination.
+    
+    Plans for integration to the backend: 
+    1.  User has to use two key-combos say Ctrl+X to cut and Ctrl+V to paste, or Ctrl+C to copy and Ctrl+V to paste.
+    2.  When Ctrl+X or Ctrl+C is pressed we have two sets of arguments, the length of the selection and the startPositionSource.
+    3.  When Ctrl+V is pressed we have the final arguments: currNode and startPositionDestination.
+    Now cut() or copy() can be called based on whether Ctrl+X was called or Ctrl+C was called.
+    
+*/
+struct node* copy(struct node* currNode,int startPositionSource,int startPositionDestination,int length)
+{
+	int tempStartSource = startPositionSource,tempStartDestination = startPositionDestination,n = length;
+	currNode = getHead(currNode);
+	struct node *nextNode = moveCursor(currNode,startPositionDestination-1);
+	printf("%c\n",nextNode->data);
+	currNode = getHead(currNode);
+	currNode = moveCursor(currNode,startPositionSource);
+	printf("%c\n",currNode->data);
+	while(n-->0){
+		nextNode = insertCharAfter(nextNode,currNode->data);
+		currNode = currNode->next;
+	}
+	return nextNode;
+}
+
+struct node* cut(struct node* currNode,int startPositionSource,int startPositionDestination,int length)
+{
+	currNode = copy(currNode, startPositionSource, startPositionDestination, length);
+	currNode = getHead(currNode);
+	if(startPositionDestination<=startPositionSource){
+		currNode = moveCursor(currNode, startPositionSource + 2*length - 1);
+	}
+	else{
+		currNode = moveCursor(currNode, startPositionSource + length - 1);
+	}
+	struct node* temp = currNode;
+	int n = length;
+	while(n-->0){
+	    printf("%d\n",n);
+		currNode = deleteChar(currNode);
+		undoPop();
+	}
+	return temp;
+}
+
