@@ -22,11 +22,11 @@
 #include "listfunc.h"
 
 int HEIGHT, WIDTH;
-WINDOW *title_bar, *editor, *menu;
+WINDOW *TITLE_BAR, *EDITOR, *MENU;
 char *filename;
 struct node* NODE;
 int TAB_WIDTH = 4;
-
+const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo";
 /**
  * Signal Handlers
  */
@@ -53,7 +53,7 @@ WINDOW *create_window(int height, int width, int y, int x, int color_pair) {
 
 int line_length(int y){
     char str[400] = {'\0'};
-    mvwinstr(editor, y, 0, &str);
+    mvwinstr(EDITOR, y, 0, &str);
     int i = WIDTH;
 
     while(str[i] == ' ' || str[i] == '\0'){
@@ -64,7 +64,7 @@ int line_length(int y){
 
 int distance_from_char_to_cursor(int y, int x) {
     char str[400] = {'\0'};
-    mvwinnstr(editor, y, 0, &str, x - 1);
+    mvwinnstr(EDITOR, y, 0, &str, x - 1);
     int i = (int) (strlen(str) - 1), distance = 1;
     while(i) {
         if (str[i] != ' ') {
@@ -79,7 +79,7 @@ int distance_from_char_to_cursor(int y, int x) {
 int special_key(){
     int ch;
     ch = getch();	//get [
-    mvwprintw(title_bar, 20, 1, "Detected character 1 is = %c ", (char)ch);
+    mvwprintw(TITLE_BAR, 20, 1, "Detected character 1 is = %c ", (char)ch);
     //printf("Detected character 1 is = %c ", (char)ch);
     ch = getch();
     //printf("Detected character 2 is = %c ", (char)ch);
@@ -103,24 +103,24 @@ int special_key(){
  */
 
 void init_title_bar() {
-    title_bar = create_window(1, WIDTH, 0, 0, 2);
-    wmove(title_bar, 0, 0);
-    wprintw(title_bar, "Project Slate, dims:%d:%d", HEIGHT, WIDTH);
-    wrefresh(title_bar);
+    TITLE_BAR = create_window(1, WIDTH, 0, 0, 2);
+    wmove(TITLE_BAR, 0, 0);
+    wprintw(TITLE_BAR, "Project Slate, dims:%d:%d", HEIGHT, WIDTH);
+    wrefresh(TITLE_BAR);
 }
 
 void init_editor() {
-    editor = create_window(HEIGHT - 2, WIDTH, 1, 0, 0);
-    wmove(editor, 0, 0);
-    wprintw(editor, getFileContents(NODE));
-    wrefresh(editor);
+    EDITOR = create_window(HEIGHT - 2, WIDTH, 1, 0, 0);
+    wmove(EDITOR, 0, 0);
+    wprintw(EDITOR, getFileContents(NODE));
+    wrefresh(EDITOR);
 }
 
 void init_menu() {
-    menu = create_window(1, WIDTH, HEIGHT - 1, 0, 2);
-    wmove(menu, 0, 0);
-    wprintw(menu, "^C: Quit\t^W: Write");
-    wrefresh(menu);
+    MENU = create_window(1, WIDTH, HEIGHT - 1, 0, 2);
+    wmove(MENU, 0, 0);
+    wprintw(MENU, MENU_ITEMS);
+    wrefresh(MENU);
 }
 
 void init_windows() {
@@ -150,53 +150,70 @@ void init_slate() {
     init_curses_config();
     init_colors();
     init_windows();
-    keypad(editor, TRUE);
-    scrollok(editor, TRUE);
+    keypad(EDITOR, TRUE);
+    scrollok(EDITOR, TRUE);
     move(1,0);
-    wmove(editor, 0, 0);
+    wmove(EDITOR, 0, 0);
 }
 
 void keystroke_handler() {
     int ch;
-    int x = 0, y = 0, increment = 0, decrement = 0;
+    int x = 0, y = 0, increment = 0, decrement = 0, shift = 0;
 
     refresh();
-    wrefresh(editor);
+    wrefresh(EDITOR);
 
     while ((ch = getch())) {
-        wrefresh(title_bar);
+        wrefresh(TITLE_BAR);
+        shift = 0;
         switch (ch) {
             case 27:    //^[ ESCAPE SEQUENCE BEGINS
                 switch (special_key()){
                     case KEY_UP:
+                        wscrl(EDITOR, -1);
+//                        if (y == 0) {
+//                            wscrl(EDITOR, 1);
+//                        }
                         y = (y - 1 < 0) ? 0 : y - 1;
-                        wmove(editor, y, x);
+                        wmove(EDITOR, y, x);
                         break;
                     case KEY_DOWN:
+                        if (y == HEIGHT - 2) {
+                            wscrl(EDITOR, -1);
+                        }
                         y = (y + 1 > HEIGHT - 3 && line_length(y + 1) > 0) ? HEIGHT - 3 : y + 1;
-                        wmove(editor, y, x);
+                        wmove(EDITOR, y, x);
                         break;
                     case KEY_LEFT:
+                        //TODO: Handle Tabs
                         if (x != 0) {
                             x = x - 1;
                             NODE = moveCursor(NODE, -1);
                         }
-                        wmove(editor, y, x);
+                        wmove(EDITOR, y, x);
                         break;
                     case KEY_RIGHT:
+                        //TODO: Handle Tabs
                         if (x < line_length(y) + 1) {
                             x++;
                             NODE = moveCursor(NODE, 1);
                         }
-                        wmove(editor, y, x);
+                        wmove(EDITOR, y, x);
                         break;
                     default:
                         break;
                 }
                 break;
-            case 23:    // ALT + S
-                writeBackToFile(NODE, filename);
+            case 21:    // CTRL + U : UNDO
+                shift = undo(&NODE);
+                x += shift;
+                wmove(EDITOR, y, x);
+                if (shift < 0) {
+                    wdelch(EDITOR);
+                }
                 break;
+            case 23:    // CTRL + W : WRITE
+                writeBackToFile(NODE, filename); break;
             case 127:   //BACKSPACE
                 switch ((int) NODE->data) {
                     case 9: decrement = distance_from_char_to_cursor(y, x); break;   // TAB
@@ -212,8 +229,8 @@ void keystroke_handler() {
                     }
 
                     x = line_length(y) + 1;
-                    wmove(editor, y, x);
-                    wdelch(editor);
+                    wmove(EDITOR, y, x);
+                    wdelch(EDITOR);
                     NODE = deleteChar(NODE);
                 }
                 else if(x > 0){
@@ -221,18 +238,17 @@ void keystroke_handler() {
                     if(x < 0){
                         x=0;
                     }
-                    wmove(editor, y, x);
-                    wdelch(editor);
+                    wmove(EDITOR, y, x);
+                    wdelch(EDITOR);
                     NODE = deleteChar(NODE);
                 }
                 break;
             case 10:    //ENTER
                 //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
-                mvwprintw(editor, 0, 0, getFileContents(NODE));
-                getyx(editor, y, x);
+                mvwprintw(EDITOR, 0, 0, getFileContents(NODE));
+                getyx(EDITOR, y, x);
                 x=0;
-                wmove(editor, y, 0);
                 break;
             default:
                 switch (ch) {
@@ -246,17 +262,18 @@ void keystroke_handler() {
                 x += increment;
                 //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
-                mvwprintw(editor, 0, 0, getFileContents(NODE));
-                wmove(editor, y, x);
         }
+        mvwprintw(EDITOR, 0, 0, getFileContents(NODE));
+        wmove(EDITOR, y, x);
+
         //TODO: Debug stuff
-        mvwprintw(title_bar, 0, WIDTH - 32, "Ch:%6d | %3c", NODE->data, (char) NODE->data);
-        mvwprintw(title_bar, 0, WIDTH - 18, "X:%3d ", x);
-        mvwprintw(title_bar, 0, WIDTH - 12, "Y:%3d", y);
-        wrefresh(title_bar);
+        mvwprintw(TITLE_BAR, 0, WIDTH - 32, "Ch:%6d | %3c", NODE->data, NODE->data);
+        mvwprintw(TITLE_BAR, 0, WIDTH - 18, "X:%3d ", x);
+        mvwprintw(TITLE_BAR, 0, WIDTH - 12, "Y:%3d", y);
+        wrefresh(TITLE_BAR);
         //DEBUG Stuff ends
 
-        wrefresh(editor);
+        wrefresh(EDITOR);   // This needs to be the last line in the loop
     }
 }
 
