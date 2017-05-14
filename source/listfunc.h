@@ -310,14 +310,14 @@ int undo(struct node** currNode)
 			move = calculateMoves(*currNode,nextNode);
 			*currNode = nextNode;
 			undoPop();
-			return move;
+			return -1;
 		case 'D':
-		    printf("Inserting %c after this character: %c\n",unNode.uNode->data,unNode.uNode->prev->data);
+//		    printf("Inserting %c after this character: %c\n",unNode.uNode->data,unNode.uNode->prev->data);
 		    nextNode = insertCharAfter(unNode.uNode->prev, unNode.uNode->data); //return 1 for successful insertion and -1 for some error
 			move = calculateMoves(*currNode,nextNode);
 			*currNode = nextNode;
 		    undoPop();
-			return move;
+			return +1;
 		default: 
 		    return move;//throw error message
 
@@ -409,7 +409,7 @@ char* convertToString(struct node* currNode)
 void find(char* pattern,struct node* currNode)
 {
 	char* text = convertToString(currNode);
-	printf("\n%s\n",text);
+//	printf("\n%s\n",text);
 	initializePositionArray();
 	KMPSearch(pattern,text);
 }
@@ -483,7 +483,7 @@ void findAndReplaceAll(char* pattern,char* replace,struct node* currNode)
 	while(index<lengthOfPos){
 	    find(pattern,currNode);
 	    int h=0;
-	    for(;positionArray[h]!=-1;h++) printf("%d\n",positionArray[h]);
+	    for(;positionArray[h]!=-1;h++); //printf("%d\n",positionArray[h]);
 	    
 		temp = getHead(currNode);
 		i=0,pos=positionArray[0];
