@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define MAX_STACK_SIZE 100
+#define KB 1024
 
 struct node{
 	char data;
@@ -269,7 +270,7 @@ void writeBackToFile(struct node* head_ref, char *filename)
 
 char * getFileContents(struct node* currNode) {
     struct node* temp = getHead(currNode);
-    char * list = malloc(100000); char ch;
+    char * list = (char *) calloc((size_t) 200 * KB, sizeof(char));
     int i = 0;
     while (temp != NULL)
     {

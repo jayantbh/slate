@@ -12,11 +12,10 @@
  */
 
 
-//#include <curses.h>
 #include <ncurses.h>
 //#include <panel.h>
 #include <signal.h>
-#include <time.h>
+//#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include "listfunc.h"
@@ -27,15 +26,13 @@ char *filename;
 struct node* NODE;
 int TAB_WIDTH = 4;
 const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo";
+
 /**
  * Signal Handlers
  */
 
 static void finish(int sig) {
     endwin();
-
-    // Clear up any other data structures or windows.
-
     exit(0);
 }
 
@@ -45,15 +42,23 @@ static void finish(int sig) {
 
 WINDOW *create_window(int height, int width, int y, int x, int color_pair) {
     WINDOW *window = newwin(height, width, y, x);
-    wbkgd(window, COLOR_PAIR(color_pair));
+    wbkgd(window, (chtype) COLOR_PAIR(color_pair));
     refresh();
     wrefresh(window);
     return window;
 }
 
+void debug(int x, int y) {
+    mvwprintw(TITLE_BAR, 0, WIDTH - 32, "Ch:%6d | %3c", NODE->data, NODE->data);
+    mvwprintw(TITLE_BAR, 0, WIDTH - 18, "X:%3d ", x);
+    mvwprintw(TITLE_BAR, 0, WIDTH - 12, "Y:%3d", y);
+    wrefresh(TITLE_BAR);
+}
+
+// Returns the last column containing a character
 int line_length(int y){
-    char str[400] = {'\0'};
-    mvwinstr(EDITOR, y, 0, &str);
+    char *str = (char *) calloc((size_t) WIDTH, sizeof(char));
+    mvwinstr(EDITOR, y, 0, str);
     int i = WIDTH;
 
     while(str[i] == ' ' || str[i] == '\0'){
@@ -62,9 +67,9 @@ int line_length(int y){
     return i;
 }
 
-int distance_from_char_to_cursor(int y, int x) {
-    char str[400] = {'\0'};
-    mvwinnstr(EDITOR, y, 0, &str, x - 1);
+int gap_before_cursor(int y, int x) {
+    char *str = (char *) calloc((size_t) WIDTH, sizeof(char));
+    mvwinnstr(EDITOR, y, 0, str, x - 1);
     int i = (int) (strlen(str) - 1), distance = 1;
     while(i) {
         if (str[i] != ' ') {
@@ -76,13 +81,37 @@ int distance_from_char_to_cursor(int y, int x) {
     return distance;
 }
 
+int characters_after_cursor(int y, int x) {
+    //TODO: Handle tabs
+    char *str = (char *) calloc((size_t) WIDTH - x + 1, sizeof(char));
+    mvwinnstr(EDITOR, y, x, str, WIDTH - x + 1);
+    int i = WIDTH - 1, distance = 0;
+    while(i) {
+        if (str[i] != ' ' && str[i] != '\0') {
+            break;
+        }
+        distance++;
+        i--;
+    }
+    return WIDTH - distance;
+}
+
+int characters_before_cursor(int y, int x) {
+    //TODO: Handle tabs
+    int length = line_length(y) + 1;
+    if (length < x) {
+        return length;
+    }
+    return x;
+}
+
 int special_key(){
     int ch;
-    ch = getch();	//get [
-    mvwprintw(TITLE_BAR, 20, 1, "Detected character 1 is = %c ", (char)ch);
-    //printf("Detected character 1 is = %c ", (char)ch);
+    getch();    //get [
+    // mvwprintw(TITLE_BAR, 20, 1, "Detected character 1 is = %c ", (char)ch);
+    // printf("Detected character 1 is = %c ", (char)ch);
     ch = getch();
-    //printf("Detected character 2 is = %c ", (char)ch);
+    // printf("Detected character 2 is = %c ", (char)ch);
 
     switch (ch) {
         case 65:    //A, escaped KEY_UP
@@ -98,6 +127,48 @@ int special_key(){
     return 0;
 }
 
+void print_line(char *BUFFER, int y, int x) {
+    mvwprintw(EDITOR, y, 0, BUFFER);
+    wmove(EDITOR, y, x);
+    wclrtoeol(EDITOR);
+}
+
+void refresh_editor(int y) {
+    wclear(EDITOR);
+    int height = HEIGHT - 2, TOP_LIMIT = y, BOTTOM_LIMIT = y + height;
+    char *BUFFER = (char *) calloc((size_t) WIDTH, sizeof(char));
+
+    struct node* KEY = getHead(NODE)->next; // Skip one node, because the first item in the linked list is a non-printable character.
+    int i = 0, line = 0;
+    while (KEY != NULL)
+    {
+        int limit = WIDTH;
+        char ch = KEY->data;
+
+        switch (ch) {
+            case '\t': limit -= TAB_WIDTH; break;
+            default: break;
+        }
+        if (i + 1 == limit || ch == '\n') {
+            if (line >= TOP_LIMIT && line < BOTTOM_LIMIT) {
+                print_line(BUFFER, y + line, i);
+                line++;
+            }
+
+            i = 0;
+            memset(BUFFER, 0, sizeof BUFFER);
+        }
+        else {
+            BUFFER[i] = ch;
+            i++;
+            if (KEY->next == NULL) {
+                print_line(BUFFER, line, i);
+                line++;
+            }
+        }
+        KEY = KEY->next;
+    }
+}
 /**
  * Initialization functions
  */
@@ -170,19 +241,33 @@ void keystroke_handler() {
             case 27:    //^[ ESCAPE SEQUENCE BEGINS
                 switch (special_key()){
                     case KEY_UP:
-                        wscrl(EDITOR, -1);
-//                        if (y == 0) {
-//                            wscrl(EDITOR, 1);
-//                        }
-                        y = (y - 1 < 0) ? 0 : y - 1;
-                        wmove(EDITOR, y, x);
+                        if (y - 1 < 0) {
+                            y = 0;
+                        }
+                        else {
+                            shift--; // 1 for newline
+                            shift -= characters_before_cursor(y, x);
+                            shift -= characters_after_cursor(y - 1, x);
+                            NODE = moveCursor(NODE, shift);
+
+                            y--;
+                        }
                         break;
                     case KEY_DOWN:
-                        if (y == HEIGHT - 2) {
-                            wscrl(EDITOR, -1);
+                        if (y + 1 > HEIGHT - 3 && line_length(y + 1) > 0) {
+                            y = HEIGHT - 3;
                         }
-                        y = (y + 1 > HEIGHT - 3 && line_length(y + 1) > 0) ? HEIGHT - 3 : y + 1;
-                        wmove(EDITOR, y, x);
+                        else if (line_length(y + 1) > 0) {
+                            if (line_length(y + 1) < x) {
+                                x = line_length(y + 1) + 1;
+                            }
+                            shift++; // 1 for newline
+                            shift += characters_after_cursor(y, x);
+                            shift += characters_before_cursor(y + 1, x);
+                            NODE = moveCursor(NODE, shift);
+
+                            y++;
+                        }
                         break;
                     case KEY_LEFT:
                         //TODO: Handle Tabs
@@ -216,7 +301,7 @@ void keystroke_handler() {
                 writeBackToFile(NODE, filename); break;
             case 127:   //BACKSPACE
                 switch ((int) NODE->data) {
-                    case 9: decrement = distance_from_char_to_cursor(y, x); break;   // TAB
+                    case 9: decrement = gap_before_cursor(y, x); break;   // TAB
                     default: decrement = 1;
                 }
                 if (x == 0 && y == 0) {
@@ -229,26 +314,18 @@ void keystroke_handler() {
                     }
 
                     x = line_length(y) + 1;
-                    wmove(EDITOR, y, x);
-                    wdelch(EDITOR);
-                    NODE = deleteChar(NODE);
                 }
                 else if(x > 0){
                     x -= decrement;
                     if(x < 0){
                         x=0;
                     }
-                    wmove(EDITOR, y, x);
-                    wdelch(EDITOR);
-                    NODE = deleteChar(NODE);
                 }
+                NODE = deleteChar(NODE);
                 break;
             case 10:    //ENTER
-                //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
-                mvwprintw(EDITOR, 0, 0, getFileContents(NODE));
-                getyx(EDITOR, y, x);
-                x=0;
+                x=0; y++;
                 break;
             default:
                 switch (ch) {
@@ -263,15 +340,11 @@ void keystroke_handler() {
                 //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
         }
-        mvwprintw(EDITOR, 0, 0, getFileContents(NODE));
+        // mvwprintw(EDITOR, 0, 0, getFileContents(NODE));
+        refresh_editor(0);
         wmove(EDITOR, y, x);
 
-        //TODO: Debug stuff
-        mvwprintw(TITLE_BAR, 0, WIDTH - 32, "Ch:%6d | %3c", NODE->data, NODE->data);
-        mvwprintw(TITLE_BAR, 0, WIDTH - 18, "X:%3d ", x);
-        mvwprintw(TITLE_BAR, 0, WIDTH - 12, "Y:%3d", y);
-        wrefresh(TITLE_BAR);
-        //DEBUG Stuff ends
+        debug(x, y);
 
         wrefresh(EDITOR);   // This needs to be the last line in the loop
     }
