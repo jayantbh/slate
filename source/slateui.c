@@ -297,6 +297,10 @@ void keystroke_handler() {
                     wdelch(EDITOR);
                 }
                 break;
+            case 11:    // CTRL + K : WRITE
+                writeBackToFile(NODE, filename); break;
+            case 12:    // CTRL + L : WRITE
+                writeBackToFile(NODE, filename); break;
             case 23:    // CTRL + W : WRITE
                 writeBackToFile(NODE, filename); break;
             case 127:   //BACKSPACE
