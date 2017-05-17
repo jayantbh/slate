@@ -163,7 +163,7 @@ void init_editor() {
     EDITOR = create_window(HEIGHT - 2, WIDTH, 1, 0, 0);
     wmove(EDITOR, 0, 0);
     wclear(EDITOR);
-    wprintw(EDITOR, getFileContents(NODE));
+    wprintw(EDITOR, getContents(NODE));
     wrefresh(EDITOR);
 }
 
@@ -180,9 +180,9 @@ void init_find_dialog() {
     int x_pos = WIDTH/2 - width/2;
     int y_pos = HEIGHT/2 - 1;
     FIND_DIALOG = create_window(height, width, y_pos, x_pos, 1);
-    box(FIND_DIALOG, 0, 0);
-    wmove(FIND_DIALOG, 0, 1);
-    wprintw(FIND_DIALOG, "Enter text to find:");
+    wborder(FIND_DIALOG, ' ', ' ', 0, 0, ' ', ' ', ' ', ' ');
+    wmove(FIND_DIALOG, 0, width/2 - 2);
+    wprintw(FIND_DIALOG, "FIND");
     wmove(FIND_DIALOG, 1, 1);
     wrefresh(FIND_DIALOG);
 }
@@ -237,6 +237,7 @@ void init_slate() {
     init_colors();
     init_windows();
     keypad(EDITOR, TRUE);
+    keypad(FIND_DIALOG, TRUE);
     scrollok(EDITOR, TRUE);
     move(1,0);
     wmove(EDITOR, 0, 0);
@@ -321,7 +322,8 @@ void keystroke_handler() {
                 update_panels();
                 doupdate();
 
-                struct node* FIND;
+                struct node* FIND = getEmptyList();
+//                FIND = insertCharAfter(FIND, '\n');
                 while ((ch = wgetch(CURRENT_WINDOW))) {
                     switch (ch) {
                         case KEY_LEFT:
@@ -333,13 +335,19 @@ void keystroke_handler() {
                             break;
                         case KEY_RIGHT:
                             //TODO: Handle Tabs
-                            if (loc_x < line_length(loc_y) + 1) {
+                            if (loc_x <= line_length(loc_y) + 1) {
                                 loc_x++;
                                 FIND = moveCursor(FIND, 1);
                             }
                             break;
                         case 10:    //ENTER
                             // TODO: Trigger Find
+                            break;
+                        case 27:    //ESCAPE
+                            top_panel(_EDITOR);
+                            CURRENT_WINDOW = EDITOR;
+                            update_panels();
+                            doupdate();
                             break;
                         case 127:   //BACKSPACE
                             switch ((int) FIND->data) {
@@ -365,14 +373,23 @@ void keystroke_handler() {
                             loc_x += increment;
                             FIND = insertCharAfter(FIND, (char) ch);
                     }
-                    wmove(CURRENT_WINDOW, loc_y, loc_x);
-                    mvwprintw(CURRENT_WINDOW, loc_y, 0, getFileContents(FIND));
-                    wrefresh(CURRENT_WINDOW);
-                    if (ch == 10) {
+
+                    if (ch == 10 || ch == 27) {
                         break;
                     }
+
+                    wmove(CURRENT_WINDOW, 1, 0);
+                    wclrtoeol(CURRENT_WINDOW);
+                    char *contents = getContents(FIND);
+                    for (int i = 1; i < strlen(contents); i++) {
+                        mvwaddch(CURRENT_WINDOW, 1, i, contents[i]);
+                    }
+
+//                    mvwprintw(CURRENT_WINDOW, 1, 1, getContents(FIND));
+
+                    wmove(CURRENT_WINDOW, loc_y + 1, loc_x + 1);
+                    wrefresh(CURRENT_WINDOW);
                 }
-                getch();
                 break;
             case 11:    // CTRL + K : WRITE
             case 12:    // CTRL + L : WRITE

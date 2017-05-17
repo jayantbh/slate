@@ -32,7 +32,7 @@ struct node* goLeft(struct node* currNode, int n);
 struct node* moveCursor(struct node* currNode, int n);
 struct node* insertCharAfter(struct node* currNode, char newData);
 struct node* insertCharBefore(struct node* currNode, char newData);
-char * getFileContents(struct node* currNode);
+char * getContents(struct node *currNode);
 struct node* deleteChar(struct node* currNode);
 struct node* loadFileToList(char *filename);
 struct node* getEmptyList(void);
@@ -282,7 +282,7 @@ void writeBackToFile(struct node* head_ref, char *filename)
 	fclose(file);
 }
 
-char * getFileContents(struct node* currNode) {
+char * getContents(struct node *currNode) {
     struct node* temp = getHead(currNode);
     char * list = (char *) calloc((size_t) 200 * KB, sizeof(char));
     int i = 0;
