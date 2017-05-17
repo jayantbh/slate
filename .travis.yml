@@ -1,2 +1,5 @@
 language: c
 script: cmake . && make && ctest
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install libncurses-dev
