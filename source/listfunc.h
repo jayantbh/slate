@@ -35,6 +35,7 @@ struct node* insertCharBefore(struct node* currNode, char newData);
 char * getFileContents(struct node* currNode);
 struct node* deleteChar(struct node* currNode);
 struct node* loadFileToList(char *filename);
+struct node* getEmptyList(void);
 void writeBackToFile(struct node* head_ref, char *filename);
 
 int undoPush(struct node* currNode, char operation);
@@ -252,6 +253,19 @@ struct node* loadFileToList(char *filename)
 	}
 	printf("\nFile Loaded!\n");
 	return getHead(head);
+}
+
+//returns a list with 2 nodes
+struct node* getEmptyList()
+{
+    struct node* head = (struct node*) malloc(sizeof(struct node));
+    struct node* body = (struct node*) malloc(sizeof(struct node));
+    head->data = '\r';
+    head->prev = NULL;
+    head->next = body;
+    body->prev = head;
+    body->next = NULL;
+    return getHead(body);
 }
 
 //write the linked list back into the file
