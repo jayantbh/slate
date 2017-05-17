@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "listfunc.h"
+#include "keycodes.h"
 
 int HEIGHT, WIDTH;
 WINDOW *TITLE_BAR, *EDITOR, *MENU, *FIND_DIALOG;
@@ -258,7 +259,7 @@ void keystroke_handler() {
         loc_x = 0;
         loc_y = 0;
         switch (ch) {
-            case 27:    // ^[ ESCAPE
+            case KEY_ESC:    // ^[ ESCAPE
                 top_panel(_EDITOR);
                 CURRENT_WINDOW = EDITOR;
                 break;
@@ -319,6 +320,9 @@ void keystroke_handler() {
                 top_panel(_FIND_DIALOG);
                 CURRENT_WINDOW = FIND_DIALOG;
 
+                wmove(CURRENT_WINDOW, 1, 0);
+                wclrtoeol(CURRENT_WINDOW);
+                wmove(CURRENT_WINDOW, 1, 1);
                 update_panels();
                 doupdate();
 
@@ -340,16 +344,21 @@ void keystroke_handler() {
                                 FIND = moveCursor(FIND, 1);
                             }
                             break;
-                        case 10:    //ENTER
+                        case KEY_ENTER:    //ENTER
                             // TODO: Trigger Find
+                            top_panel(_EDITOR);
+                            CURRENT_WINDOW = EDITOR;
+                            update_panels();
+                            doupdate();
+                            find(stringSlice(getContents(FIND), 1, INF), NODE);
                             break;
-                        case 27:    //ESCAPE
+                        case KEY_ESC:    //ESCAPE
                             top_panel(_EDITOR);
                             CURRENT_WINDOW = EDITOR;
                             update_panels();
                             doupdate();
                             break;
-                        case 127:   //BACKSPACE
+                        case KEY_BKSP:   //BACKSPACE
                             switch ((int) FIND->data) {
                                 case 9: decrement = gap_before_cursor(CURRENT_WINDOW, (int) (WIDTH * 0.6), loc_y, loc_x); break;   // TAB
                                 default: decrement = 1;
@@ -374,7 +383,9 @@ void keystroke_handler() {
                             FIND = insertCharAfter(FIND, (char) ch);
                     }
 
-                    if (ch == 10 || ch == 27) {
+                    if (ch == KEY_ENTER || ch == KEY_ESC) {
+                        debug(x, y);
+                        wrefresh(CURRENT_WINDOW);
                         break;
                     }
 
@@ -395,7 +406,7 @@ void keystroke_handler() {
             case 12:    // CTRL + L : WRITE
             case 23:    // CTRL + W : WRITE
                 writeBackToFile(NODE, filename); break;
-            case 127:   //BACKSPACE
+            case KEY_BKSP:   //BACKSPACE
                 switch ((int) NODE->data) {
                     case 9: decrement = gap_before_cursor(CURRENT_WINDOW, WIDTH, y, x); break;   // TAB
                     default: decrement = 1;
@@ -419,7 +430,7 @@ void keystroke_handler() {
                 }
                 NODE = deleteChar(NODE);
                 break;
-            case 10:    //ENTER
+            case KEY_ENTER:    //ENTER
                 NODE = insertCharAfter(NODE, (char) ch);
                 x=0; y++;
                 break;

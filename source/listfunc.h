@@ -2,8 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #define MAX_STACK_SIZE 100
 #define KB 1024
+#define INF INT_MAX
 
 struct node{
 	char data;
@@ -49,6 +51,8 @@ char* convertToString(struct node* currNode);
 void find(char* pattern,struct node* currNode);
 void findAndReplace(char* pattern,char* replace,struct node* currNode);
 void findAndReplaceAll(char* pattern,char* replace,struct node* currNode);
+
+char * arraySlice(char * array, unsigned int start, unsigned int end);
 
 int calculateMoves(struct node* currNode,struct node* nextNode){
 	int movesLeft = 0,movesRight = 0;
@@ -525,5 +529,17 @@ void findAndReplaceAll(char* pattern,char* replace,struct node* currNode)
 		}
 		index++;
 	}
+}
 
+char * stringSlice(char * array, unsigned int start, unsigned int end) {
+	unsigned int length = sizeof(array) / sizeof(char);
+	if (end >= length || end == INF) {
+		end = length - 1;
+	}
+	char sliced[end - start];
+	int index = 0;
+	for (int i = start; i <= end; i++, index++) {
+		sliced[index] = array[i];
+	}
+	return sliced;
 }
