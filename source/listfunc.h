@@ -1,8 +1,12 @@
+#ifndef SLATE_LISTFUNC_H
+#define SLATE_LISTFUNC_H
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stdbool.h>
 #define MAX_STACK_SIZE 100
 #define KB 1024
 #define INF INT_MAX
@@ -23,7 +27,7 @@ int undoCursor = -1;
 
 int positionArray[100];
 int indexOfPos = 0;
-
+bool isFindDirty = false;
 
 int calculateMoves(struct node* currNode,struct node* nextNode);
 struct node* getHead(struct node* currNode);
@@ -44,7 +48,7 @@ int undoPush(struct node* currNode, char operation);
 struct undoNode undoPop(void);
 int undo(struct node** currNode);
 
-void initializePositionArray(void);
+void resetPositionArray(void);
 void KMPSearch(char *pat, char *txt);
 void computeLPSArray(char *pat, int M, int *lps);
 char* convertToString(struct node* currNode);
@@ -159,6 +163,7 @@ struct node* moveCursor(struct node* currNode, int n)
 //API for inserting a character after a given node
 struct node* insertCharAfter(struct node* currNode, char newData)
 {
+	isFindDirty = false;
 	struct node* newNode = (struct node*) malloc(sizeof(struct node));
 	newNode->data = newData;
 	newNode->next = currNode->next;
@@ -174,6 +179,7 @@ struct node* insertCharAfter(struct node* currNode, char newData)
 //API for inserting a character before a given node
 struct node* insertCharBefore(struct node* currNode, char newData)
 {
+	isFindDirty = false;
 	// If Linked list is empty then create a new node and return this as current node
 	if(currNode->data == '\0'){
 		struct node* newNode = (struct node*) malloc(sizeof(struct node));
@@ -204,6 +210,7 @@ struct node* insertCharBefore(struct node* currNode, char newData)
 //API for deleting a character at the current node
 struct node* deleteChar(struct node* currNode)
 {
+	isFindDirty = false;
 	//if(currNode == NULL) return -1; //error has occurred
 	struct node* prevNode = moveCursor(currNode,-1);
 	if(currNode->prev!=NULL) 
@@ -226,15 +233,16 @@ struct node* deleteChar(struct node* currNode)
 */
 struct node* loadFileToList(char *filename)
 {
+	isFindDirty = false;
 	if(filename == NULL){
 		printf("Enter a valid filename!\n");
 		exit(0);
 	}
-	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node *memory1,*currNode;
+	struct node* head = (struct node*) malloc(sizeof(struct node)); struct node *currNode;
 	head->prev = head->next = NULL;
 	head->data = '\r';
 	currNode = head;
-	char* list = malloc(100000); char ch;
+	char* list = malloc(100000); int ch;
 	int n = 0, i=0;
 	FILE *file;
 	file = fopen(filename,"r+");
@@ -343,13 +351,12 @@ int undo(struct node** currNode)
 	}
 }
 
-void initializePositionArray()
+void resetPositionArray()
 {
-    for(indexOfPos = 0;indexOfPos<100;indexOfPos++){
-        positionArray[indexOfPos]=-1;
-    }
+    memset(positionArray, -1, sizeof positionArray);
     indexOfPos = 0;
 }
+
 // Finds occurrences of txt[] in pat[] and stores the indices in positionArray
 void KMPSearch(char *pat, char *txt)
 {
@@ -427,9 +434,10 @@ char* convertToString(struct node* currNode)
 
 void find(char* pattern,struct node* currNode)
 {
+	isFindDirty = true;
 	char* text = convertToString(currNode);
 //	printf("\n%s\n",text);
-	initializePositionArray();
+	resetPositionArray();
 	KMPSearch(pattern,text);
 }
 void findAndReplace(char* pattern,char* replace,struct node* currNode)
@@ -536,10 +544,12 @@ char * stringSlice(char * array, unsigned int start, unsigned int end) {
 	if (end >= length || end == INF) {
 		end = length - 1;
 	}
-	char sliced[end - start];
+	char * sliced = (char *) calloc(end - start, sizeof(char));
 	int index = 0;
 	for (int i = start; i <= end; i++, index++) {
 		sliced[index] = array[i];
 	}
 	return sliced;
 }
+
+#endif //SLATE_LISTFUNC_H

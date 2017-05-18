@@ -24,7 +24,7 @@
 int HEIGHT, WIDTH;
 WINDOW *TITLE_BAR, *EDITOR, *MENU, *FIND_DIALOG;
 PANEL *_TITLE_BAR, *_EDITOR, *_MENU, *_FIND_DIALOG;
-char *filename;
+char *FILENAME, *FIND_STRING = "";
 struct node* NODE;
 int TAB_WIDTH = 4;
 const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo\t^F: Find";
@@ -107,8 +107,23 @@ int characters_before_cursor(int y, int x) {
     return x;
 }
 
-void print_line(char *BUFFER, int y, int x) {
-    mvwprintw(EDITOR, y, 0, BUFFER);
+void print_line(char *BUFFER, int y, int x, int *node_index, int *position_iterator) {
+    int highlight_length = (int) strlen(FIND_STRING);
+    bool do_highlight = false;
+    for (int i = 0; i < strlen(BUFFER); i++, (*node_index)++) {
+        do_highlight = (*node_index == positionArray[*position_iterator]) && isFindDirty;
+        if (do_highlight) {
+            wattron(EDITOR, COLOR_PAIR(3));
+            while (*node_index < positionArray[*position_iterator] + highlight_length) {
+                mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
+                (*node_index)++;
+                i++;
+            }
+            wattroff(EDITOR, COLOR_PAIR(3));
+            (*position_iterator)++;
+        }
+        mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
+    }
     wmove(EDITOR, y, x);
     wclrtoeol(EDITOR);
 }
@@ -119,7 +134,7 @@ void refresh_editor(int y) {
     char *BUFFER = (char *) calloc((size_t) WIDTH, sizeof(char));
 
     struct node* KEY = getHead(NODE)->next; // Skip one node, because the first item in the linked list is a non-printable character.
-    int i = 0, line = 0;
+    int i = 0, line = 0, node_index = 1, position_iterator = 0;
     while (KEY != NULL)
     {
         int limit = WIDTH;
@@ -131,8 +146,11 @@ void refresh_editor(int y) {
         }
         if (i + 1 == limit || ch == '\n') {
             if (line >= TOP_LIMIT && line < BOTTOM_LIMIT) {
-                print_line(BUFFER, y + line, i);
+                print_line(BUFFER, y + line, i, &node_index, &position_iterator);
                 line++;
+            }
+            if (ch == '\n') {
+                node_index++;
             }
 
             i = 0;
@@ -142,7 +160,7 @@ void refresh_editor(int y) {
             BUFFER[i] = ch;
             i++;
             if (KEY->next == NULL) {
-                print_line(BUFFER, line, i);
+                print_line(BUFFER, line, i, &node_index, &position_iterator);
                 line++;
             }
         }
@@ -216,7 +234,7 @@ void init_colors() {
     start_color();
     init_pair(1, COLOR_YELLOW, COLOR_BLUE);
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
-    init_pair(3, COLOR_RED, COLOR_BLACK);
+    init_pair(3, COLOR_WHITE, COLOR_RED);
     init_pair(4, COLOR_GREEN, COLOR_BLACK);
     init_pair(5, COLOR_BLUE, COLOR_BLACK);
     init_pair(6, COLOR_CYAN, COLOR_BLACK);
@@ -350,7 +368,8 @@ void keystroke_handler() {
                             CURRENT_WINDOW = EDITOR;
                             update_panels();
                             doupdate();
-                            find(stringSlice(getContents(FIND), 1, INF), NODE);
+                            FIND_STRING = stringSlice(getContents(FIND), 1, INF);
+                            find(FIND_STRING, NODE);
                             break;
                         case KEY_ESC:    //ESCAPE
                             top_panel(_EDITOR);
@@ -405,7 +424,7 @@ void keystroke_handler() {
             case 11:    // CTRL + K : WRITE
             case 12:    // CTRL + L : WRITE
             case 23:    // CTRL + W : WRITE
-                writeBackToFile(NODE, filename); break;
+                writeBackToFile(NODE, FILENAME); break;
             case KEY_BKSP:   //BACKSPACE
                 switch ((int) NODE->data) {
                     case 9: decrement = gap_before_cursor(CURRENT_WINDOW, WIDTH, y, x); break;   // TAB
@@ -462,8 +481,8 @@ void keystroke_handler() {
 int main(int argc, char *argv[]) {
     signal(SIGINT, finish);
 
-    filename = argv[1];
-    NODE = loadFileToList(filename);
+    FILENAME = argv[1];
+    NODE = loadFileToList(FILENAME);
 
     init_slate();
     keystroke_handler();

@@ -57,7 +57,9 @@ int main(int argc, char *argv[])
 	printf("No Of Moves = %d\n",undo(&currNode));
 	displayAll(currNode);
 	printf("\n %c\n",currNode->data);
-	find("BC",currNode);
+
+	char findText[] = "\rB";
+	find(stringSlice(findText, 1, INF), currNode);
 	int i=0;
 	for(;positionArray[i]!=-1; i++){
 		printf("%d\t",positionArray[i]);
