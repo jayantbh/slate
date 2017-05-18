@@ -13,19 +13,21 @@
 
 
 #include <ncurses.h>
-//#include <panel.h>
+#include <panel.h>
 #include <signal.h>
 //#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include "listfunc.h"
+#include "keycodes.h"
 
 int HEIGHT, WIDTH;
-WINDOW *TITLE_BAR, *EDITOR, *MENU;
-char *filename;
+WINDOW *TITLE_BAR, *EDITOR, *MENU, *FIND_DIALOG;
+PANEL *_TITLE_BAR, *_EDITOR, *_MENU, *_FIND_DIALOG;
+char *FILENAME, *FIND_STRING = "";
 struct node* NODE;
 int TAB_WIDTH = 4;
-const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo";
+const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo\t^F: Find";
 
 /**
  * Signal Handlers
@@ -67,9 +69,9 @@ int line_length(int y){
     return i;
 }
 
-int gap_before_cursor(int y, int x) {
-    char *str = (char *) calloc((size_t) WIDTH, sizeof(char));
-    mvwinnstr(EDITOR, y, 0, str, x - 1);
+int gap_before_cursor(WINDOW *window, int width, int y, int x) {
+    char *str = (char *) calloc((size_t) width, sizeof(char));
+    mvwinnstr(window, y, 0, str, x - 1);
     int i = (int) (strlen(str) - 1), distance = 1;
     while(i) {
         if (str[i] != ' ') {
@@ -105,30 +107,23 @@ int characters_before_cursor(int y, int x) {
     return x;
 }
 
-int special_key(){
-    int ch;
-    getch();    //get [
-    // mvwprintw(TITLE_BAR, 20, 1, "Detected character 1 is = %c ", (char)ch);
-    // printf("Detected character 1 is = %c ", (char)ch);
-    ch = getch();
-    // printf("Detected character 2 is = %c ", (char)ch);
-
-    switch (ch) {
-        case 65:    //A, escaped KEY_UP
-            return (int) KEY_UP;
-        case 66:    //B, escaped KEY_DOWN
-            return (int) KEY_DOWN;
-        case 67:    //C, escaped KEY_RIGHT
-            return (int) KEY_RIGHT;
-        case 68:    //D, escaped KEY_LEFT
-            return (int) KEY_LEFT;
-        default: break;
+void print_line(char *BUFFER, int y, int x, int *node_index, int *position_iterator) {
+    int highlight_length = (int) strlen(FIND_STRING);
+    bool do_highlight = false;
+    for (int i = 0; i < strlen(BUFFER); i++, (*node_index)++) {
+        do_highlight = (*node_index == positionArray[*position_iterator]) && isFindDirty;
+        if (do_highlight) {
+            wattron(EDITOR, COLOR_PAIR(3));
+            while (*node_index < positionArray[*position_iterator] + highlight_length) {
+                mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
+                (*node_index)++;
+                i++;
+            }
+            wattroff(EDITOR, COLOR_PAIR(3));
+            (*position_iterator)++;
+        }
+        mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
     }
-    return 0;
-}
-
-void print_line(char *BUFFER, int y, int x) {
-    mvwprintw(EDITOR, y, 0, BUFFER);
     wmove(EDITOR, y, x);
     wclrtoeol(EDITOR);
 }
@@ -139,7 +134,7 @@ void refresh_editor(int y) {
     char *BUFFER = (char *) calloc((size_t) WIDTH, sizeof(char));
 
     struct node* KEY = getHead(NODE)->next; // Skip one node, because the first item in the linked list is a non-printable character.
-    int i = 0, line = 0;
+    int i = 0, line = 0, node_index = 1, position_iterator = 0;
     while (KEY != NULL)
     {
         int limit = WIDTH;
@@ -151,8 +146,11 @@ void refresh_editor(int y) {
         }
         if (i + 1 == limit || ch == '\n') {
             if (line >= TOP_LIMIT && line < BOTTOM_LIMIT) {
-                print_line(BUFFER, y + line, i);
+                print_line(BUFFER, y + line, i, &node_index, &position_iterator);
                 line++;
+            }
+            if (ch == '\n') {
+                node_index++;
             }
 
             i = 0;
@@ -162,7 +160,7 @@ void refresh_editor(int y) {
             BUFFER[i] = ch;
             i++;
             if (KEY->next == NULL) {
-                print_line(BUFFER, line, i);
+                print_line(BUFFER, line, i, &node_index, &position_iterator);
                 line++;
             }
         }
@@ -183,7 +181,8 @@ void init_title_bar() {
 void init_editor() {
     EDITOR = create_window(HEIGHT - 2, WIDTH, 1, 0, 0);
     wmove(EDITOR, 0, 0);
-    wprintw(EDITOR, getFileContents(NODE));
+    wclear(EDITOR);
+    wprintw(EDITOR, getContents(NODE));
     wrefresh(EDITOR);
 }
 
@@ -194,16 +193,51 @@ void init_menu() {
     wrefresh(MENU);
 }
 
+void init_find_dialog() {
+    int width = (int) (WIDTH * 0.6);
+    int height = 3;
+    int x_pos = WIDTH/2 - width/2;
+    int y_pos = HEIGHT/2 - 1;
+    FIND_DIALOG = create_window(height, width, y_pos, x_pos, 1);
+    wborder(FIND_DIALOG, ' ', ' ', 0, 0, ' ', ' ', ' ', ' ');
+    wmove(FIND_DIALOG, 0, width/2 - 2);
+    wprintw(FIND_DIALOG, "FIND");
+    wmove(FIND_DIALOG, 1, 1);
+    wrefresh(FIND_DIALOG);
+}
+
+void init_panels() {
+    _TITLE_BAR = new_panel(TITLE_BAR);
+    _EDITOR = new_panel(EDITOR);
+    _MENU = new_panel(MENU);
+    _FIND_DIALOG = new_panel(FIND_DIALOG);
+
+    set_panel_userptr(_TITLE_BAR, _EDITOR);
+    set_panel_userptr(_EDITOR, _MENU);
+    set_panel_userptr(_MENU, _FIND_DIALOG);
+    set_panel_userptr(_FIND_DIALOG, _TITLE_BAR);
+
+    top_panel(_EDITOR);
+    update_panels();
+    doupdate();
+}
+
 void init_windows() {
     init_title_bar();
     init_menu();
     init_editor();
+    init_find_dialog();
+    init_panels();
 }
 
 void init_colors() {
     start_color();
     init_pair(1, COLOR_YELLOW, COLOR_BLUE);
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
+    init_pair(3, COLOR_WHITE, COLOR_RED);
+    init_pair(4, COLOR_GREEN, COLOR_BLACK);
+    init_pair(5, COLOR_BLUE, COLOR_BLACK);
+    init_pair(6, COLOR_CYAN, COLOR_BLACK);
 }
 
 void init_curses_config() {
@@ -222,6 +256,7 @@ void init_slate() {
     init_colors();
     init_windows();
     keypad(EDITOR, TRUE);
+    keypad(FIND_DIALOG, TRUE);
     scrollok(EDITOR, TRUE);
     move(1,0);
     wmove(EDITOR, 0, 0);
@@ -230,64 +265,66 @@ void init_slate() {
 void keystroke_handler() {
     int ch;
     int x = 0, y = 0, increment = 0, decrement = 0, shift = 0;
+    int loc_x = 0, loc_y = 0;
 
     refresh();
     wrefresh(EDITOR);
 
-    while ((ch = getch())) {
+    WINDOW* CURRENT_WINDOW = EDITOR;
+    while ((ch = wgetch(CURRENT_WINDOW))) {
         wrefresh(TITLE_BAR);
         shift = 0;
+        loc_x = 0;
+        loc_y = 0;
         switch (ch) {
-            case 27:    //^[ ESCAPE SEQUENCE BEGINS
-                switch (special_key()){
-                    case KEY_UP:
-                        if (y - 1 < 0) {
-                            y = 0;
-                        }
-                        else {
-                            shift--; // 1 for newline
-                            shift -= characters_before_cursor(y, x);
-                            shift -= characters_after_cursor(y - 1, x);
-                            NODE = moveCursor(NODE, shift);
-
-                            y--;
-                        }
-                        break;
-                    case KEY_DOWN:
-                        if (y + 1 > HEIGHT - 3 && line_length(y + 1) > 0) {
-                            y = HEIGHT - 3;
-                        }
-                        else if (line_length(y + 1) > 0) {
-                            if (line_length(y + 1) < x) {
-                                x = line_length(y + 1) + 1;
-                            }
-                            shift++; // 1 for newline
-                            shift += characters_after_cursor(y, x);
-                            shift += characters_before_cursor(y + 1, x);
-                            NODE = moveCursor(NODE, shift);
-
-                            y++;
-                        }
-                        break;
-                    case KEY_LEFT:
-                        //TODO: Handle Tabs
-                        if (x != 0) {
-                            x = x - 1;
-                            NODE = moveCursor(NODE, -1);
-                        }
-                        wmove(EDITOR, y, x);
-                        break;
-                    case KEY_RIGHT:
-                        //TODO: Handle Tabs
-                        if (x < line_length(y) + 1) {
-                            x++;
-                            NODE = moveCursor(NODE, 1);
-                        }
-                        wmove(EDITOR, y, x);
-                        break;
-                    default:
-                        break;
+            case KEY_ESC:    // ^[ ESCAPE
+                top_panel(_EDITOR);
+                CURRENT_WINDOW = EDITOR;
+                break;
+            case KEY_UP:
+                if (y - 1 < 0) {
+                    y = 0;
                 }
+                else {
+                    shift--; // 1 for newline
+                    shift -= characters_before_cursor(y, x);
+                    shift -= characters_after_cursor(y - 1, x);
+                    NODE = moveCursor(NODE, shift);
+
+                    y--;
+                }
+                break;
+            case KEY_DOWN:
+                if (y + 1 > HEIGHT - 3 && line_length(y + 1) > 0) {
+                    y = HEIGHT - 3;
+                }
+                else if (line_length(y + 1) > 0) {
+                    if (line_length(y + 1) < x) {
+                        x = line_length(y + 1) + 1;
+                    }
+                    shift++; // 1 for newline
+                    shift += characters_after_cursor(y, x);
+                    shift += characters_before_cursor(y + 1, x);
+                    NODE = moveCursor(NODE, shift);
+
+                    y++;
+                }
+                break;
+            case KEY_LEFT:
+                //TODO: Handle Tabs
+                if (x != 0) {
+                    x = x - 1;
+                    NODE = moveCursor(NODE, -1);
+                }
+                wmove(EDITOR, y, x);
+                break;
+            case KEY_RIGHT:
+                //TODO: Handle Tabs
+                if (x < line_length(y) + 1) {
+                    x++;
+                    NODE = moveCursor(NODE, 1);
+                }
+                wmove(EDITOR, y, x);
                 break;
             case 21:    // CTRL + U : UNDO
                 shift = undo(&NODE);
@@ -297,15 +334,100 @@ void keystroke_handler() {
                     wdelch(EDITOR);
                 }
                 break;
+            case 6:     // CTRL + F : FIND
+                top_panel(_FIND_DIALOG);
+                CURRENT_WINDOW = FIND_DIALOG;
+
+                wmove(CURRENT_WINDOW, 1, 0);
+                wclrtoeol(CURRENT_WINDOW);
+                wmove(CURRENT_WINDOW, 1, 1);
+                update_panels();
+                doupdate();
+
+                struct node* FIND = getEmptyList();
+//                FIND = insertCharAfter(FIND, '\n');
+                while ((ch = wgetch(CURRENT_WINDOW))) {
+                    switch (ch) {
+                        case KEY_LEFT:
+                            //TODO: Handle Tabs
+                            if (loc_x != 0) {
+                                loc_x = loc_x - 1;
+                                FIND = moveCursor(FIND, -1);
+                            }
+                            break;
+                        case KEY_RIGHT:
+                            //TODO: Handle Tabs
+                            if (loc_x <= line_length(loc_y) + 1) {
+                                loc_x++;
+                                FIND = moveCursor(FIND, 1);
+                            }
+                            break;
+                        case KEY_ENTER:    //ENTER
+                            // TODO: Trigger Find
+                            top_panel(_EDITOR);
+                            CURRENT_WINDOW = EDITOR;
+                            update_panels();
+                            doupdate();
+                            FIND_STRING = stringSlice(getContents(FIND), 1, INF);
+                            find(FIND_STRING, NODE);
+                            break;
+                        case KEY_ESC:    //ESCAPE
+                            top_panel(_EDITOR);
+                            CURRENT_WINDOW = EDITOR;
+                            update_panels();
+                            doupdate();
+                            break;
+                        case KEY_BKSP:   //BACKSPACE
+                            switch ((int) FIND->data) {
+                                case 9: decrement = gap_before_cursor(CURRENT_WINDOW, (int) (WIDTH * 0.6), loc_y, loc_x); break;   // TAB
+                                default: decrement = 1;
+                            }
+                            if (loc_x == 0) {
+                                break;
+                            }
+                            if(loc_x > 0){
+                                loc_x -= decrement;
+                                if(loc_x < 0){
+                                    loc_x=0;
+                                }
+                            }
+                            FIND = deleteChar(FIND);
+                            break;
+                        default:
+                            switch (ch) {
+                                case 9: increment = TAB_WIDTH - loc_x % TAB_WIDTH; break;   // TAB
+                                default: increment = 1;
+                            }
+                            loc_x += increment;
+                            FIND = insertCharAfter(FIND, (char) ch);
+                    }
+
+                    if (ch == KEY_ENTER || ch == KEY_ESC) {
+                        debug(x, y);
+                        wrefresh(CURRENT_WINDOW);
+                        break;
+                    }
+
+                    wmove(CURRENT_WINDOW, 1, 0);
+                    wclrtoeol(CURRENT_WINDOW);
+                    char *contents = getContents(FIND);
+                    for (int i = 1; i < strlen(contents); i++) {
+                        mvwaddch(CURRENT_WINDOW, 1, i, contents[i]);
+                    }
+
+//                    mvwprintw(CURRENT_WINDOW, 1, 1, getContents(FIND));
+
+                    wmove(CURRENT_WINDOW, loc_y + 1, loc_x + 1);
+                    wrefresh(CURRENT_WINDOW);
+                }
+                break;
             case 11:    // CTRL + K : WRITE
-                writeBackToFile(NODE, filename); break;
             case 12:    // CTRL + L : WRITE
-                writeBackToFile(NODE, filename); break;
             case 23:    // CTRL + W : WRITE
-                writeBackToFile(NODE, filename); break;
-            case 127:   //BACKSPACE
+                writeBackToFile(NODE, FILENAME); break;
+            case KEY_BKSP:   //BACKSPACE
                 switch ((int) NODE->data) {
-                    case 9: decrement = gap_before_cursor(y, x); break;   // TAB
+                    case 9: decrement = gap_before_cursor(CURRENT_WINDOW, WIDTH, y, x); break;   // TAB
                     default: decrement = 1;
                 }
                 if (x == 0 && y == 0) {
@@ -327,7 +449,7 @@ void keystroke_handler() {
                 }
                 NODE = deleteChar(NODE);
                 break;
-            case 10:    //ENTER
+            case KEY_ENTER:    //ENTER
                 NODE = insertCharAfter(NODE, (char) ch);
                 x=0; y++;
                 break;
@@ -344,21 +466,23 @@ void keystroke_handler() {
                 //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
         }
-        // mvwprintw(EDITOR, 0, 0, getFileContents(NODE));
         refresh_editor(0);
         wmove(EDITOR, y, x);
 
         debug(x, y);
+        wrefresh(CURRENT_WINDOW);   // This needs to be the last line in the loop
 
-        wrefresh(EDITOR);   // This needs to be the last line in the loop
+        // TODO: We might not need to do this here.
+        update_panels();
+        doupdate();
     }
 }
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, finish);
 
-    filename = argv[1];
-    NODE = loadFileToList(filename);
+    FILENAME = argv[1];
+    NODE = loadFileToList(FILENAME);
 
     init_slate();
     keystroke_handler();
