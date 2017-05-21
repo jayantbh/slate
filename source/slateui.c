@@ -27,7 +27,7 @@ PANEL *_TITLE_BAR, *_EDITOR, *_MENU, *_FIND_DIALOG, *_REPLACE_DIALOG;
 char *FILENAME, *FIND_STRING = "", *REPLACE_STRING = "";
 struct node* NODE;
 int TAB_WIDTH = 4;
-const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo\t^F: Find";
+const char MENU_ITEMS[] = "^C: Quit\t^W: Write\t^U: Undo\t^F: Find\t^R: Replace";
 
 /**
  * Signal Handlers
@@ -174,7 +174,7 @@ void refresh_editor(int y) {
 void init_title_bar() {
     TITLE_BAR = create_window(1, WIDTH, 0, 0, 2);
     wmove(TITLE_BAR, 0, 0);
-    wprintw(TITLE_BAR, "Project Slate, dims:%d:%d", HEIGHT, WIDTH);
+    wprintw(TITLE_BAR, "Project Slate, dims:%d:%d, accessing file: %s", HEIGHT, WIDTH, FILENAME);
     wrefresh(TITLE_BAR);
 }
 
