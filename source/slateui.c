@@ -21,9 +21,10 @@
 #include "listfunc.h"
 #include "slate.h"
 
-int HEIGHT, WIDTH;
 WINDOW *TITLE_BAR, *EDITOR, *MENU, *FIND_DIALOG, *REPLACE_DIALOG;
 PANEL *_TITLE_BAR, *_EDITOR, *_MENU, *_FIND_DIALOG, *_REPLACE_DIALOG;
+
+int HEIGHT, WIDTH, LINE_COUNT;
 char *FILENAME, *FIND_STRING = "", *REPLACE_STRING = "";
 struct node* NODE;
 int TAB_WIDTH = 4;
@@ -61,12 +62,10 @@ void debug(int x, int y) {
 int line_length(WINDOW* window, int y, int x){
     char *str = (char *) calloc((size_t) WIDTH, sizeof(char));
     mvwinstr(window, y, x, str);
-    int i = WIDTH - x;
+    int i = WIDTH - x - 1;
 
-    while(str[i] == ' ' || str[i] == '\0'){
-        i--;
-    }
-    return i;
+    while(str[i] == ' ' && i--);
+    return i + 1;
 }
 
 int gap_before_cursor(WINDOW *window, int width, int y, int x) {
@@ -85,22 +84,16 @@ int gap_before_cursor(WINDOW *window, int width, int y, int x) {
 
 int characters_after_cursor(WINDOW* window, int y, int x) {
     //TODO: Handle tabs
-    char *str = (char *) calloc((size_t) WIDTH - x + 1, sizeof(char));
-    mvwinnstr(window, y, x, str, WIDTH - x + 1);
-    int i = WIDTH - 1, distance = 0;
-    while(i) {
-        if (str[i] != ' ' && str[i] != '\0') {
-            break;
-        }
-        distance++;
-        i--;
+    int distance = line_length(window, y, x) - x;   // +1 because `x` will be in whole numbers, but `line_length` will return natural numbers
+    if (distance < 0) {
+        return 0;
     }
-    return WIDTH - distance;
+    return distance;
 }
 
 int characters_before_cursor(WINDOW* window, int y, int x) {
     //TODO: Handle tabs
-    int length = line_length(window, y, 0) + 1;
+    int length = line_length(window, y, 0);
     if (length < x) {
         return length;
     }
@@ -166,6 +159,8 @@ void refresh_editor(int y) {
         }
         KEY = KEY->next;
     }
+
+    LINE_COUNT = line;
 }
 /**
  * Initialization functions
@@ -441,7 +436,11 @@ void keystroke_handler() {
                 break;
             case KEY_UP:
                 if (y - 1 < 0) {
+                    shift -= characters_before_cursor(CURRENT_WINDOW, y, x);
+                    NODE = moveCursor(NODE, shift);
+
                     y = 0;
+                    x = 0;
                 }
                 else {
                     shift--; // 1 for newline
@@ -449,23 +448,36 @@ void keystroke_handler() {
                     shift -= characters_after_cursor(CURRENT_WINDOW, y - 1, x);
                     NODE = moveCursor(NODE, shift);
 
+                    current_line_length = line_length(CURRENT_WINDOW, y - 1, 0);
+                    if (current_line_length < x) {
+                        x = current_line_length;
+                    }
                     y--;
                 }
                 break;
             case KEY_DOWN:
                 current_line_length = line_length(CURRENT_WINDOW, y + 1, 0);
-                if (y + 1 > HEIGHT - 3 && current_line_length > 0) {
-                    y = HEIGHT - 3;
+                if (y + 1 > HEIGHT - 3 || y == LINE_COUNT - 1) {    // HEIGHT - 3 because, -1 for last row index (0..HEIGHT-1), -1 for TITLE_BAR, -1 for MENU
+                    shift += characters_after_cursor(CURRENT_WINDOW, y, x);
+                    NODE = moveCursor(NODE, shift);
+
+                    x = line_length(CURRENT_WINDOW, y, 0);
                 }
-                else if (current_line_length > 0) {
-                    if (current_line_length < x) {
-                        x = current_line_length + 1;
-                    }
+                /**
+                 * LINE_COUNT is from 1..N, y is from 0..HEIGHT.
+                 * We're checking if the next line index will NOT be less than the number of lines.
+                 * Because when y = 2 at most, we'll have 3 lines, because 0, 1, 2.
+                 */
+                else if (y + 1 < LINE_COUNT) {
+
                     shift++; // 1 for newline
                     shift += characters_after_cursor(CURRENT_WINDOW, y, x);
                     shift += characters_before_cursor(CURRENT_WINDOW, y + 1, x);
                     NODE = moveCursor(NODE, shift);
 
+                    if (current_line_length < x) {
+                        x = current_line_length;
+                    }
                     y++;
                 }
                 break;
@@ -479,7 +491,7 @@ void keystroke_handler() {
                 break;
             case KEY_RIGHT:
                 //TODO: Handle Tabs
-                if (x < line_length(CURRENT_WINDOW, y, 0) + 1) {
+                if (x < line_length(CURRENT_WINDOW, y, 0)) {
                     x++;
                     NODE = moveCursor(NODE, 1);
                 }
@@ -521,7 +533,7 @@ void keystroke_handler() {
                         y=0;
                     }
 
-                    x = line_length(CURRENT_WINDOW, y, 0) + 1;
+                    x = line_length(CURRENT_WINDOW, y, 0);
                 }
                 else if(x > 0){
                     x -= decrement;
