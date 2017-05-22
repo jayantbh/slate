@@ -254,6 +254,7 @@ void init_colors() {
     init_pair(4, COLOR_GREEN, COLOR_BLACK);
     init_pair(5, COLOR_BLUE, COLOR_BLACK);
     init_pair(6, COLOR_CYAN, COLOR_BLACK);
+    init_pair(7, COLOR_BLUE, COLOR_CYAN);
 }
 
 void init_curses_config() {
@@ -261,7 +262,7 @@ void init_curses_config() {
     cbreak();
     noecho();
     set_tabsize(TAB_WIDTH);
-    refresh();      // Important to refresh screen before refresh window
+    refresh();
 
     HEIGHT = LINES;
     WIDTH = COLS;
@@ -348,7 +349,12 @@ void handle_find_replace(WINDOW* CURRENT_WINDOW, int mode) {
                 }
                 break;
             case KEY_ENTER:    //ENTER
-                mvwprintw(REPLACE_DIALOG, 5, 1, "[1]: Replace first | [2]: Replace all");
+                if (mode == MODE_REPLACE) {
+                    wattron(CURRENT_WINDOW, COLOR_PAIR(7));
+                    mvwhline(CURRENT_WINDOW, 5, 0, ' ', (int) (WIDTH * 0.6));
+                    mvwprintw(CURRENT_WINDOW, 5, 1, "[1]: Replace first | [2]: Replace all");
+                    wattroff(CURRENT_WINDOW, COLOR_PAIR(7));
+                }
                 wmove(CURRENT_WINDOW, loc_y, loc_x + 1);
 
                 FIND_STRING = stringSlice(getContents(FIND), 1, INF);
