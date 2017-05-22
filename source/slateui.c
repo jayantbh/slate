@@ -352,7 +352,10 @@ void handle_find_replace(WINDOW* CURRENT_WINDOW, int mode) {
                 wmove(CURRENT_WINDOW, loc_y, loc_x + 1);
 
                 FIND_STRING = stringSlice(getContents(FIND), 1, INF);
-                if (mode == MODE_FIND) {
+                if (strlen(FIND_STRING) == 0) {
+                    // do nothing, and return to editor window by closing off find/replace window
+                }
+                else if (mode == MODE_FIND) {
                     find(FIND_STRING, NODE);
                 }
                 else if (mode == MODE_REPLACE) {
