@@ -385,7 +385,8 @@ void handle_find_replace(WINDOW* CURRENT_WINDOW, int mode) {
                 update_panels();
                 doupdate();
                 break;
-            case KEY_BKSP:   //BACKSPACE
+            case KEY_BKSP:  //BACKSPACE
+            case KEY_BKSP_ALT:    //BACKSPACE
                 decrement = 1;
                 if (loc_x == 0) {
                     break;
@@ -547,7 +548,8 @@ void keystroke_handler() {
             case CTRL_L:    // CTRL + L : WRITE
             case CTRL_W:    // CTRL + W : WRITE
                 writeBackToFile(NODE, FILENAME); break;
-            case KEY_BKSP:   //BACKSPACE
+            case KEY_BKSP:  //BACKSPACE
+            case KEY_BKSP_ALT:    //BACKSPACE
                 switch ((int) NODE->data) {
                     case KEY_TAB: decrement = gap_before_cursor(CURRENT_WINDOW, WIDTH, y, x); break;   // TAB
                     default: decrement = 1;

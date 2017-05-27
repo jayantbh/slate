@@ -10,10 +10,10 @@
 #define KEY_ENTER       10
 #define KEY_ESC         27
 #define KEY_BKSP        127
+#define KEY_BKSP_ALT    263
 
 // CTRL KEYS
 #define CTRL_F          6
-#define CTRL_G          7
 #define CTRL_K          11
 #define CTRL_L          12
 #define CTRL_R          18
