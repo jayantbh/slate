@@ -109,13 +109,20 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
             wattron(EDITOR, COLOR_PAIR(3));
             while (*node_index < positionArray[*position_iterator] + highlight_length) {
                 mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
-                (*node_index)++;
                 i++;
+                if (BUFFER[i]) {
+                    (*node_index)++;
+                }
+                else {
+                    break;
+                }
             }
             wattroff(EDITOR, COLOR_PAIR(3));
             (*position_iterator)++;
         }
-        mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
+        if (BUFFER[i]) {
+            mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
+        }
     }
     wmove(EDITOR, y, x);
     wclrtoeol(EDITOR);
