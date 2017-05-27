@@ -102,7 +102,7 @@ int characters_before_cursor(WINDOW* window, int y, int x) {
 
 void print_line(char *BUFFER, int y, int x, int *node_index, int *position_iterator) {
     int highlight_length = (int) strlen(FIND_STRING);
-    bool do_highlight = false;
+    bool do_highlight;
     for (int i = 0; i < strlen(BUFFER); i++, (*node_index)++) {
         do_highlight = (*node_index == positionArray[*position_iterator]) && isFindDirty;
         if (do_highlight) {
@@ -127,7 +127,7 @@ void refresh_editor(int y) {
     char *BUFFER = (char *) calloc((size_t) WIDTH, sizeof(char));
 
     struct node* KEY = getHead(NODE)->next; // Skip one node, because the first item in the linked list is a non-printable character.
-    int i = 0, line = 0, node_index = 1, position_iterator = 0;
+    int i = 0, line = 0, node_index = 1, position_iterator = 0, total_lines = 0, current_line;  // current_line exists just for semantics
     while (KEY != NULL)
     {
         int limit = WIDTH;
@@ -138,8 +138,8 @@ void refresh_editor(int y) {
             default: break;
         }
         if (i + 1 == limit || ch == '\n') {
-            if (line >= TOP_LIMIT && line < BOTTOM_LIMIT) {
-                print_line(BUFFER, y + line, i, &node_index, &position_iterator);
+            if (current_line >= TOP_LIMIT && current_line < BOTTOM_LIMIT) {
+                print_line(BUFFER, line, i, &node_index, &position_iterator);
                 line++;
             }
             if (ch == '\n') {
@@ -147,20 +147,26 @@ void refresh_editor(int y) {
             }
 
             i = 0;
+            total_lines++;
+
             memset(BUFFER, 0, sizeof BUFFER);
+            if (KEY->next == NULL) {
+                break;
+            }
         }
         else {
             BUFFER[i] = ch;
             i++;
-            if (KEY->next == NULL) {
+            if ((current_line >= TOP_LIMIT && current_line < BOTTOM_LIMIT) && KEY->next == NULL) {
                 print_line(BUFFER, line, i, &node_index, &position_iterator);
                 line++;
             }
         }
         KEY = KEY->next;
+        current_line = total_lines;
     }
 
-    LINE_COUNT = line;
+    LINE_COUNT = total_lines;
 }
 /**
  * Initialization functions
@@ -177,7 +183,7 @@ void init_editor() {
     EDITOR = create_window(HEIGHT - 2, WIDTH, 1, 0, 0);
     wmove(EDITOR, 0, 0);
     wclear(EDITOR);
-    wprintw(EDITOR, getContents(NODE));
+    refresh_editor(0);
     wrefresh(EDITOR);
 }
 
@@ -419,8 +425,9 @@ void handle_find_replace(WINDOW* CURRENT_WINDOW, int mode) {
 
 void keystroke_handler() {
     int ch;
-    int x = 0, y = 0, increment = 0, decrement = 0, shift = 0;
+    int x = 0, y = 0, increment = 0, decrement = 0, shift = 0, scroll_offset = 0;
     int current_line_length = 0;
+    bool cursor_at_first_row, cursor_at_last_row, cursor_at_first_line, cursor_at_last_line;
 
     refresh();
     wrefresh(EDITOR);
@@ -435,7 +442,10 @@ void keystroke_handler() {
                 CURRENT_WINDOW = EDITOR;
                 break;
             case KEY_UP:
-                if (y - 1 < 0) {
+                cursor_at_first_row = y <= 0;
+                cursor_at_first_line = y + scroll_offset == 0;
+
+                if (cursor_at_first_line) {
                     shift -= characters_before_cursor(CURRENT_WINDOW, y, x);
                     NODE = moveCursor(NODE, shift);
 
@@ -444,20 +454,29 @@ void keystroke_handler() {
                 }
                 else {
                     shift--; // 1 for newline
-                    shift -= characters_before_cursor(CURRENT_WINDOW, y, x);
-                    shift -= characters_after_cursor(CURRENT_WINDOW, y - 1, x);
+                    if (cursor_at_first_row) {
+                        refresh_editor(--scroll_offset);
+                        shift -= characters_before_cursor(CURRENT_WINDOW, y, x);
+                        shift -= characters_after_cursor(CURRENT_WINDOW, y + 1, x);
+                    }
+                    else {
+                        shift -= characters_before_cursor(CURRENT_WINDOW, y, x);
+                        shift -= characters_after_cursor(CURRENT_WINDOW, y - 1, x);
+                        y--;
+                    }
                     NODE = moveCursor(NODE, shift);
 
-                    current_line_length = line_length(CURRENT_WINDOW, y - 1, 0);
+                    current_line_length = line_length(CURRENT_WINDOW, y, 0);
                     if (current_line_length < x) {
                         x = current_line_length;
                     }
-                    y--;
                 }
                 break;
             case KEY_DOWN:
-                current_line_length = line_length(CURRENT_WINDOW, y + 1, 0);
-                if (y + 1 > HEIGHT - 3 || y == LINE_COUNT - 1) {    // HEIGHT - 3 because, -1 for last row index (0..HEIGHT-1), -1 for TITLE_BAR, -1 for MENU
+                cursor_at_last_row = y + 1 > HEIGHT - 3;
+                cursor_at_last_line = y + scroll_offset == LINE_COUNT;
+
+                if (cursor_at_last_line) {    // HEIGHT - 3 because, -1 for last row index (0..HEIGHT-1), -1 for TITLE_BAR, -1 for MENU
                     shift += characters_after_cursor(CURRENT_WINDOW, y, x);
                     NODE = moveCursor(NODE, shift);
 
@@ -468,17 +487,24 @@ void keystroke_handler() {
                  * We're checking if the next line index will NOT be less than the number of lines.
                  * Because when y = 2 at most, we'll have 3 lines, because 0, 1, 2.
                  */
-                else if (y + 1 < LINE_COUNT) {
-
+                else {  // If cursor isn't at the last line
                     shift++; // 1 for newline
-                    shift += characters_after_cursor(CURRENT_WINDOW, y, x);
-                    shift += characters_before_cursor(CURRENT_WINDOW, y + 1, x);
+                    if (cursor_at_last_row) {
+                        refresh_editor(++scroll_offset);
+                        shift += characters_after_cursor(CURRENT_WINDOW, y - 1, x);
+                        shift += characters_before_cursor(CURRENT_WINDOW, y, x);
+                    }
+                    else {
+                        shift += characters_after_cursor(CURRENT_WINDOW, y, x);
+                        shift += characters_before_cursor(CURRENT_WINDOW, y + 1, x);
+                        y++;
+                    }
                     NODE = moveCursor(NODE, shift);
 
+                    current_line_length = line_length(CURRENT_WINDOW, y, 0);
                     if (current_line_length < x) {
                         x = current_line_length;
                     }
-                    y++;
                 }
                 break;
             case KEY_LEFT:
@@ -487,7 +513,6 @@ void keystroke_handler() {
                     x = x - 1;
                     NODE = moveCursor(NODE, -1);
                 }
-                wmove(EDITOR, y, x);
                 break;
             case KEY_RIGHT:
                 //TODO: Handle Tabs
@@ -495,7 +520,6 @@ void keystroke_handler() {
                     x++;
                     NODE = moveCursor(NODE, 1);
                 }
-                wmove(EDITOR, y, x);
                 break;
             case 21:    // CTRL + U : UNDO
                 shift = undo(&NODE);
@@ -509,11 +533,15 @@ void keystroke_handler() {
                 top_panel(_FIND_DIALOG);
                 CURRENT_WINDOW = FIND_DIALOG;
                 handle_find_replace(CURRENT_WINDOW, MODE_FIND);
+                top_panel(_EDITOR);
+                CURRENT_WINDOW = EDITOR;
                 break;
             case CTRL_R:     // CTRL + R : REPLACE/REPLACE ALL
                 top_panel(_REPLACE_DIALOG);
                 CURRENT_WINDOW = REPLACE_DIALOG;
                 handle_find_replace(CURRENT_WINDOW, MODE_REPLACE);
+                top_panel(_EDITOR);
+                CURRENT_WINDOW = EDITOR;
                 break;
             case CTRL_K:    // CTRL + K : WRITE
             case CTRL_L:    // CTRL + L : WRITE
@@ -560,7 +588,7 @@ void keystroke_handler() {
                 //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
         }
-        refresh_editor(0);
+        refresh_editor(scroll_offset);
         wmove(EDITOR, y, x);
 
         debug(x, y);
