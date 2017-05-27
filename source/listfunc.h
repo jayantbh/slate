@@ -424,7 +424,7 @@ char* convertToString(struct node* currNode)
 	char* text = malloc(100000);
 	struct node* head = getHead(currNode);
 	int n = 0;
-	while(head->next!=NULL){
+	while(head!=NULL){
 		text[n++] = head->data;
 		head = head->next;
 	}
