@@ -13,6 +13,7 @@
 
 // CTRL KEYS
 #define CTRL_F          6
+#define CTRL_G          7
 #define CTRL_K          11
 #define CTRL_L          12
 #define CTRL_R          18

@@ -84,7 +84,7 @@ int gap_before_cursor(WINDOW *window, int width, int y, int x) {
 
 int characters_after_cursor(WINDOW* window, int y, int x) {
     //TODO: Handle tabs
-    int distance = line_length(window, y, x) - x;   // +1 because `x` will be in whole numbers, but `line_length` will return natural numbers
+    int distance = line_length(window, y, 0) - x;   // +1 because `x` will be in whole numbers, but `line_length` will return natural numbers
     if (distance < 0) {
         return 0;
     }
