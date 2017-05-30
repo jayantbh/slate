@@ -103,8 +103,9 @@ int characters_before_cursor(WINDOW* window, int y, int x) {
 void print_line(char *BUFFER, int y, int x, int *node_index, int *position_iterator) {
     int highlight_length = (int) strlen(FIND_STRING);
     int highlighted_index, highlighted_node_index, last_highlighted_index = -1;
+    int i = 0;
     bool do_highlight;
-    for (int i = 0; i < strlen(BUFFER); i++, (*node_index)++) {
+    while(i < strlen(BUFFER)) {
         do_highlight = (*node_index == positionArray[*position_iterator]) && isFindDirty;
         if (do_highlight) {
             highlighted_index = i;
@@ -118,7 +119,7 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
                     highlighted_node_index++;
                 }
                 else {
-                    break;
+                    return;
                 }
             }
             wattroff(EDITOR, COLOR_PAIR(3));
@@ -127,6 +128,9 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
         else if (BUFFER[i] && i > last_highlighted_index) {
             mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
         }
+
+        i++;
+        (*node_index)++;
     }
     wmove(EDITOR, y, x);
     wclrtoeol(EDITOR);
@@ -160,7 +164,7 @@ void refresh_editor(int y) {
             i = 0;
             total_lines++;
 
-            memset(BUFFER, 0, sizeof BUFFER);
+            memset(BUFFER, 0, WIDTH * (sizeof BUFFER));
             if (KEY->next == NULL) {
                 break;
             }
@@ -450,10 +454,12 @@ void keystroke_handler() {
         shift = 0;
         switch (ch) {
             case KEY_ESC:    // ^[ ESCAPE
+                isFindDirty = false;
                 top_panel(_EDITOR);
                 CURRENT_WINDOW = EDITOR;
                 break;
             case KEY_UP:
+                isFindDirty = false;
                 cursor_at_first_row = y <= 0;
                 cursor_at_first_line = y + scroll_offset == 0;
 
@@ -485,6 +491,7 @@ void keystroke_handler() {
                 }
                 break;
             case KEY_DOWN:
+                isFindDirty = false;
                 cursor_at_last_row = y + 1 > HEIGHT - 3;
                 cursor_at_last_line = y + scroll_offset == LINE_COUNT;
 
@@ -520,6 +527,7 @@ void keystroke_handler() {
                 }
                 break;
             case KEY_LEFT:
+                isFindDirty = false;
                 //TODO: Handle Tabs
                 if (x != 0) {
                     x = x - 1;
@@ -527,6 +535,7 @@ void keystroke_handler() {
                 }
                 break;
             case KEY_RIGHT:
+                isFindDirty = false;
                 //TODO: Handle Tabs
                 if (x < line_length(CURRENT_WINDOW, y, 0)) {
                     x++;
@@ -534,6 +543,7 @@ void keystroke_handler() {
                 }
                 break;
             case 21:    // CTRL + U : UNDO
+                isFindDirty = false;
                 shift = undo(&NODE);
                 x += shift;
                 wmove(EDITOR, y, x);
