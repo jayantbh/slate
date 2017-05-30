@@ -102,16 +102,20 @@ int characters_before_cursor(WINDOW* window, int y, int x) {
 
 void print_line(char *BUFFER, int y, int x, int *node_index, int *position_iterator) {
     int highlight_length = (int) strlen(FIND_STRING);
+    int highlighted_index, highlighted_node_index, last_highlighted_index = -1;
     bool do_highlight;
     for (int i = 0; i < strlen(BUFFER); i++, (*node_index)++) {
         do_highlight = (*node_index == positionArray[*position_iterator]) && isFindDirty;
         if (do_highlight) {
+            highlighted_index = i;
+            highlighted_node_index = *node_index;
             wattron(EDITOR, COLOR_PAIR(3));
-            while (*node_index < positionArray[*position_iterator] + highlight_length) {
-                mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
-                i++;
-                if (BUFFER[i]) {
-                    (*node_index)++;
+            while (highlighted_node_index < positionArray[*position_iterator] + highlight_length) {
+                mvwaddch(EDITOR, y, highlighted_index, (chtype) BUFFER[highlighted_index]);
+                last_highlighted_index = highlighted_index;
+                highlighted_index++;
+                if (BUFFER[highlighted_index]) {
+                    highlighted_node_index++;
                 }
                 else {
                     break;
@@ -120,7 +124,7 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
             wattroff(EDITOR, COLOR_PAIR(3));
             (*position_iterator)++;
         }
-        if (BUFFER[i]) {
+        else if (BUFFER[i] && i > last_highlighted_index) {
             mvwaddch(EDITOR, y, i, (chtype) BUFFER[i]);
         }
     }
