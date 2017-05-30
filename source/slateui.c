@@ -125,7 +125,7 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
                     highlighted_node_index++;
                 }
                 else {
-                    return;
+                    break;
                 }
             }
             wattroff(EDITOR, COLOR_PAIR(3));
