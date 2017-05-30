@@ -36,6 +36,7 @@ void displayCurrN(struct node* currNode, int N);
 struct node* goRight(struct node* currNode, int n);
 struct node* goLeft(struct node* currNode, int n);
 struct node* moveCursor(struct node* currNode, int n);
+struct node* moveCursorToIndex(struct node* currNode, int n);
 struct node* insertCharAfter(struct node* currNode, char newData);
 struct node* insertCharBefore(struct node* currNode, char newData);
 char * getContents(struct node *currNode);
@@ -129,7 +130,6 @@ struct node* goRight(struct node* currNode, int n)
 	struct node* temp = currNode;
 	while(temp->next != NULL && n>0){
 		temp = temp->next;
-		//printf("\n*****\n%c, %d\n",temp->data,n);
 		n--;
 	}
 	return temp;
@@ -141,14 +141,12 @@ struct node* goLeft(struct node* currNode, int n)
 	struct node* temp = currNode;
 	while(temp->prev != NULL && n<0){
 		temp = temp->prev;
-		//printf("\n*****\n%c, %d\n",temp->data,n);
 		n++;
 	}
 	return temp;
 }
 
 //API METHODS
-
 struct node* moveCursor(struct node* currNode, int n)
 {
 	struct node* temp = currNode;
@@ -160,6 +158,15 @@ struct node* moveCursor(struct node* currNode, int n)
 	}
 	return temp;
 }
+struct node* moveCursorToIndex(struct node* currNode, int n)
+{
+	struct node* temp = getHead(currNode);
+	if(n > 0) {
+		return goRight(temp, n);
+	}
+    return temp;
+}
+
 //API for inserting a character after a given node
 struct node* insertCharAfter(struct node* currNode, char newData)
 {
