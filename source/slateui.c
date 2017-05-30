@@ -24,7 +24,7 @@
 WINDOW *TITLE_BAR, *EDITOR, *MENU, *FIND_DIALOG, *REPLACE_DIALOG;
 PANEL *_TITLE_BAR, *_EDITOR, *_MENU, *_FIND_DIALOG, *_REPLACE_DIALOG;
 
-int HEIGHT, WIDTH, LINE_COUNT;
+int HEIGHT, WIDTH, LINE_COUNT, FIND_INDEX = -1, FIND_X = -1, FIND_Y = -1;
 char *FILENAME, *FIND_STRING = "", *REPLACE_STRING = "";
 struct node* NODE;
 int TAB_WIDTH = 4;
@@ -110,6 +110,12 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
         if (do_highlight) {
             highlighted_index = i;
             highlighted_node_index = *node_index;
+
+            if (*position_iterator == FIND_INDEX) {
+                FIND_X = i;
+                FIND_Y = y;
+            }
+
             wattron(EDITOR, COLOR_PAIR(3));
             while (highlighted_node_index < positionArray[*position_iterator] + highlight_length) {
                 mvwaddch(EDITOR, y, highlighted_index, (chtype) BUFFER[highlighted_index]);
@@ -138,11 +144,25 @@ void print_line(char *BUFFER, int y, int x, int *node_index, int *position_itera
 
 void refresh_editor(int y) {
     wclear(EDITOR);
-    int height = HEIGHT - 2, TOP_LIMIT = y, BOTTOM_LIMIT = y + height;
+    int height = HEIGHT - 2;
+    int max_allowed_y_line = LINE_COUNT - height + 1;
+
+    if (y > 0 && y > max_allowed_y_line) {
+        y = max_allowed_y_line;
+    }
+    if (LINE_COUNT <= height) {
+        y = 0;
+    }
+    if (y < 0) {
+        y = 0;
+    }
+
+    int TOP_LIMIT = y, BOTTOM_LIMIT = y + height;
     char *BUFFER = (char *) calloc((size_t) WIDTH, sizeof(char));
+    bool line_is_in_view, line_ends, result_out_of_view;
 
     struct node* KEY = getHead(NODE)->next; // Skip one node, because the first item in the linked list is a non-printable character.
-    int i = 0, line = 0, node_index = 1, position_iterator = 0, total_lines = 0, current_line;  // current_line exists just for semantics
+    int i = 0, ch_index = 0, line = 0, node_index = 1, position_iterator = 0, total_lines = 0, current_line;  // current_line exists just for semantics
     while (KEY != NULL)
     {
         int limit = WIDTH;
@@ -152,10 +172,16 @@ void refresh_editor(int y) {
             case '\t': limit -= TAB_WIDTH; break;
             default: break;
         }
-        if (i + 1 == limit || ch == '\n') {
-            if (current_line >= TOP_LIMIT && current_line < BOTTOM_LIMIT) {
+
+        line_is_in_view = current_line >= TOP_LIMIT && current_line < BOTTOM_LIMIT;
+        line_ends = i + 1 == limit || ch == '\n';
+        if (line_ends) {
+            if (line_is_in_view) {
                 print_line(BUFFER, line, i, &node_index, &position_iterator);
                 line++;
+            }
+            else {
+                node_index += strlen(BUFFER);
             }
             if (ch == '\n') {
                 node_index++;
@@ -172,13 +198,20 @@ void refresh_editor(int y) {
         else {
             BUFFER[i] = ch;
             i++;
-            if ((current_line >= TOP_LIMIT && current_line < BOTTOM_LIMIT) && KEY->next == NULL) {
+            if (line_is_in_view && KEY->next == NULL) {
                 print_line(BUFFER, line, i, &node_index, &position_iterator);
                 line++;
             }
         }
+
         KEY = KEY->next;
         current_line = total_lines;
+        result_out_of_view = ch_index == positionArray[position_iterator] && position_iterator == FIND_INDEX && isFindDirty && FIND_X == -1 && FIND_Y == -1;
+        if (result_out_of_view) {
+            FIND_X = i;
+            FIND_Y = line;
+        }
+        ch_index++;
     }
 
     LINE_COUNT = total_lines;
@@ -306,7 +339,7 @@ void handle_find_replace(WINDOW* CURRENT_WINDOW, int mode) {
     int ch;
     short int loc_x = 0, loc_y = 0, increment = 0, decrement = 0;
     short int find_x = 0, replace_x = 0;
-    short int FIELD, FIND_FIELD = 1, REPLACE_FIELD = 3;  // FIELD: Field flag to determine which field is focused, also used for vertical coordinates in window
+    short int FIELD, FIND_FIELD = 1, REPLACE_FIELD = 3;  // FIELD: Field flag to determine which field is focused, also used for `y` vertical coordinates in window
 
     if (mode == MODE_REPLACE) {
         wmove(CURRENT_WINDOW, 3, 1);
@@ -542,6 +575,10 @@ void keystroke_handler() {
                     NODE = moveCursor(NODE, 1);
                 }
                 break;
+            case KEY_SLEFT:
+                break;
+            case KEY_SRIGHT:
+                break;
             case 21:    // CTRL + U : UNDO
                 isFindDirty = false;
                 shift = undo(&NODE);
@@ -552,13 +589,31 @@ void keystroke_handler() {
                 }
                 break;
             case CTRL_F:     // CTRL + F : FIND
+                isFindDirty = false;
+
+                FIND_INDEX = 0;
+                FIND_X = -1;
+                FIND_Y = -1;
+
                 top_panel(_FIND_DIALOG);
                 CURRENT_WINDOW = FIND_DIALOG;
                 handle_find_replace(CURRENT_WINDOW, MODE_FIND);
                 top_panel(_EDITOR);
                 CURRENT_WINDOW = EDITOR;
+
+                refresh_editor(scroll_offset);
+                if (FIND_X != -1 && FIND_Y != -1) {
+                    scroll_offset = FIND_Y;
+                    refresh_editor(FIND_Y);
+
+                    x = FIND_X;
+                    y = FIND_Y;
+                }
                 break;
             case CTRL_R:     // CTRL + R : REPLACE/REPLACE ALL
+                isFindDirty = false;
+                FIND_INDEX = 0;
+
                 top_panel(_REPLACE_DIALOG);
                 CURRENT_WINDOW = REPLACE_DIALOG;
                 handle_find_replace(CURRENT_WINDOW, MODE_REPLACE);
@@ -611,6 +666,7 @@ void keystroke_handler() {
                 //waddch(editor, (char) ch);
                 NODE = insertCharAfter(NODE, (char) ch);
         }
+
         refresh_editor(scroll_offset);
         wmove(EDITOR, y, x);
 
