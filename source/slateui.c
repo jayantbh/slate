@@ -162,7 +162,7 @@ void refresh_editor(int y) {
     bool line_is_in_view, line_ends, result_out_of_view;
 
     struct node* KEY = getHead(NODE)->next; // Skip one node, because the first item in the linked list is a non-printable character.
-    int i = 0, ch_index = 0, line = 0, node_index = 1, position_iterator = 0, total_lines = 0, current_line;  // current_line exists just for semantics
+    int i = 0, ch_index = 0, line = 0, node_index = 1, position_iterator = 0, total_lines = 0, current_line = 0;  // current_line exists just for semantics
     while (KEY != NULL)
     {
         int limit = WIDTH;
@@ -215,7 +215,7 @@ void refresh_editor(int y) {
         ch_index++;
     }
 
-    LINE_COUNT = total_lines;
+    LINE_COUNT = total_lines + 1;
 }
 /**
  * Initialization functions
@@ -527,7 +527,7 @@ void keystroke_handler() {
             case KEY_DOWN:
                 isFindDirty = false;
                 cursor_at_last_row = y + 1 > HEIGHT - 3;
-                cursor_at_last_line = y + scroll_offset == LINE_COUNT;
+                cursor_at_last_line = y + scroll_offset == LINE_COUNT - 1;
 
                 if (cursor_at_last_line) {    // HEIGHT - 3 because, -1 for last row index (0..HEIGHT-1), -1 for TITLE_BAR, -1 for MENU
                     shift += characters_after_cursor(CURRENT_WINDOW, y, x);
@@ -697,8 +697,16 @@ void keystroke_handler() {
                 NODE = deleteChar(NODE);
                 break;
             case KEY_ENTER:    //ENTER
+                cursor_at_last_row = y == HEIGHT - 3;
                 NODE = insertCharAfter(NODE, (char) ch);
-                x=0; y++;
+                x=0;
+                if (cursor_at_last_row) {
+                    scroll_offset++;
+                    refresh_editor(scroll_offset);
+                }
+                else {
+                    y++;
+                }
                 break;
             default:
                 switch (ch) {
