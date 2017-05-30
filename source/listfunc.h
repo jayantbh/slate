@@ -364,6 +364,12 @@ void resetPositionArray()
     indexOfPos = 0;
 }
 
+int positionArrayLength() {
+    int i = 0;
+    for(i = 0; positionArray[i] != -1; i++);
+    return i;
+}
+
 // Finds occurrences of txt[] in pat[] and stores the indices in positionArray
 void KMPSearch(char *pat, char *txt)
 {
