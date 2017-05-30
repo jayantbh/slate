@@ -210,6 +210,7 @@ void refresh_editor(int y) {
         if (result_out_of_view) {
             FIND_X = i;
             FIND_Y = line;
+            NODE = moveCursorToIndex(NODE, ch_index - 1);
         }
         ch_index++;
     }
@@ -474,7 +475,7 @@ void handle_find_replace(WINDOW* CURRENT_WINDOW, int mode) {
 
 void keystroke_handler() {
     int ch;
-    int x = 0, y = 0, increment = 0, decrement = 0, shift = 0, scroll_offset = 0;
+    int x = 0, y = 0, increment = 0, decrement = 0, shift = 0, scroll_offset = 0, position_array_length;
     int current_line_length = 0;
     bool cursor_at_first_row, cursor_at_last_row, cursor_at_first_line, cursor_at_last_line;
 
@@ -576,8 +577,54 @@ void keystroke_handler() {
                 }
                 break;
             case KEY_SLEFT:
+                if (!isFindDirty) {
+                    break;
+                }
+
+                FIND_X = -1;
+                FIND_Y = -1;
+
+                position_array_length = positionArrayLength();
+                if (position_array_length && FIND_INDEX - 1 == -1) {
+                    FIND_INDEX = positionArrayLength() - 1;
+                }
+                else {
+                    FIND_INDEX--;
+                }
+
+                refresh_editor(scroll_offset);
+                if (FIND_X != -1 && FIND_Y != -1) {
+                    scroll_offset = FIND_Y;
+                    refresh_editor(scroll_offset);
+
+                    x = FIND_X;
+                    y = FIND_Y;
+                }
                 break;
             case KEY_SRIGHT:
+                if (!isFindDirty) {
+                    break;
+                }
+
+                FIND_X = -1;
+                FIND_Y = -1;
+
+                position_array_length = positionArrayLength();
+                if (position_array_length && FIND_INDEX + 1 == position_array_length) {
+                    FIND_INDEX = 0;
+                }
+                else {
+                    FIND_INDEX++;
+                }
+
+                refresh_editor(scroll_offset);
+                if (FIND_X != -1 && FIND_Y != -1) {
+                    scroll_offset = FIND_Y;
+                    refresh_editor(scroll_offset);
+
+                    x = FIND_X;
+                    y = FIND_Y;
+                }
                 break;
             case 21:    // CTRL + U : UNDO
                 isFindDirty = false;
@@ -604,7 +651,7 @@ void keystroke_handler() {
                 refresh_editor(scroll_offset);
                 if (FIND_X != -1 && FIND_Y != -1) {
                     scroll_offset = FIND_Y;
-                    refresh_editor(FIND_Y);
+                    refresh_editor(scroll_offset);
 
                     x = FIND_X;
                     y = FIND_Y;
