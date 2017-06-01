@@ -7,7 +7,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdbool.h>
-#define MAX_STACK_SIZE 100
+#define MAX_STACK_SIZE 1000000
 #define KB 1024
 #define INF INT_MAX
 
@@ -344,14 +344,14 @@ int undo(struct node** currNode)
 			move = calculateMoves(*currNode,nextNode);
 			*currNode = nextNode;
 			undoPop();
-			return -1;
+			return move;
 		case 'D':
 //		    printf("Inserting %c after this character: %c\n",unNode.uNode->data,unNode.uNode->prev->data);
 		    nextNode = insertCharAfter(unNode.uNode->prev, unNode.uNode->data); //return 1 for successful insertion and -1 for some error
 			move = calculateMoves(*currNode,nextNode);
 			*currNode = nextNode;
 		    undoPop();
-			return +1;
+			return move;
 		default: 
 		    return move;//throw error message
 

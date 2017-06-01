@@ -487,6 +487,8 @@ void keystroke_handler() {
         wrefresh(TITLE_BAR);
         shift = 0;
         switch (ch) {
+            case DEBUG_KEY:
+                break;
             case KEY_ESC:    // ^[ ESCAPE
                 isFindDirty = false;
                 top_panel(_EDITOR);
@@ -630,9 +632,13 @@ void keystroke_handler() {
                 isFindDirty = false;
                 shift = undo(&NODE);
                 x += shift;
-                wmove(EDITOR, y, x);
-                if (shift < 0) {
-                    wdelch(EDITOR);
+                if(x < 0){
+                    y--;
+                    if(y < 0){
+                        y=0;
+                    }
+
+                    x = line_length(CURRENT_WINDOW, y, 0);
                 }
                 break;
             case CTRL_F:     // CTRL + F : FIND
