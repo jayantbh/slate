@@ -6,6 +6,7 @@
 #define SLATE_KEYCODES_H
 
 // KEYCODES
+#define DEBUG_KEY       -1
 #define KEY_TAB         9
 #define KEY_ENTER       10
 #define KEY_ESC         27
