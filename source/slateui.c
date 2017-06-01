@@ -628,7 +628,7 @@ void keystroke_handler() {
                     y = FIND_Y;
                 }
                 break;
-            case 21:    // CTRL + U : UNDO
+            case CTRL_U:    // CTRL + U : UNDO
                 isFindDirty = false;
                 shift = undo(&NODE);
                 x += shift;
